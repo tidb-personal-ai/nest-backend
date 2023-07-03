@@ -1,0 +1,13 @@
+{
+    "javascript.format.semicolons": "remove",
+    "javascript.inlayHints.enumMemberValues.enabled": false,
+    "javascript.inlayHints.functionLikeReturnTypes.enabled": true,
+    "javascript.inlayHints.propertyDeclarationTypes.enabled": true,
+    "javascript.inlayHints.variableTypes.enabled": true,
+    "javascript.preferences.quoteStyle": "single",
+    "typescript.format.semicolons": "remove",
+    "typescript.inlayHints.functionLikeReturnTypes.enabled": true,
+    "typescript.inlayHints.propertyDeclarationTypes.enabled": true,
+    "typescript.inlayHints.variableTypes.enabled": true,
+    "typescript.preferences.quoteStyle": "single"
+}
