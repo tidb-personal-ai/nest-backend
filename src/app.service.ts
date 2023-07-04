@@ -6,4 +6,8 @@ export class AppService {
     getHello(authUser: AuthUser): string {
         return `Hello ${authUser.email ?? authUser.uid} from Nest!`
     }
+
+    getStatus(): string {
+        return 'OK'
+    }
 }

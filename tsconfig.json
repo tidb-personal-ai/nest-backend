@@ -21,6 +21,7 @@
       "@jwt/*": ["src/jwt/*"],
       "@user/*": ["src/user/*"],
       "@app/*": ["src/*"],
+      "@helpers/*": ["src/helpers/*"],
     }
   }
 }
