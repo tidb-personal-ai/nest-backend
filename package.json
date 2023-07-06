@@ -7,6 +7,8 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
+    "db:up": "docker-compose -f milvus-standalone-docker-compose.yml up -d",
+    "db:down": "docker-compose -f milvus-standalone-docker-compose.yml down",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "cross-env NODE_ENV=development nest start --watch",

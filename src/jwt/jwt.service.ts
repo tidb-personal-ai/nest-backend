@@ -1,7 +1,6 @@
-import { isDevEnvironment } from '@app/helpers/environment'
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { AuthUser } from '@user/user.model'
-import { initializeApp, applicationDefault } from 'firebase-admin/app'
+import { initializeApp } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 
 @Injectable()
@@ -10,17 +9,7 @@ export class FirebaseAuthService implements OnModuleInit {
 
     onModuleInit() {
         try {
-            if (isDevEnvironment) {
-                this.logger.log('Initializing Firebase in dev environment')
-                initializeApp({
-                    credential: applicationDefault(),
-                    //databaseURL:
-                    //    'https://tidb-personal-ai-default-rtdb.europe-west1.firebasedatabase.app',
-                })
-            } else {
-                this.logger.log('Initializing Firebase in prod environment')
-                initializeApp()
-            }
+            initializeApp()
             this.logger.log('Firebase initialized')
         } catch (error) {
             this.logger.error(
