@@ -18,6 +18,8 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
+      "@ai/*": ["src/ai/*"],
+      "@shared/*": ["src/shared/*"],
       "@jwt/*": ["src/jwt/*"],
       "@user/*": ["src/user/*"],
       "@app/*": ["src/*"],

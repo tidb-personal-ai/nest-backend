@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
-import { AuthUser } from '@user/user.model'
+import { AuthUser } from '@user/domain/user.model'
 import { initializeApp } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 

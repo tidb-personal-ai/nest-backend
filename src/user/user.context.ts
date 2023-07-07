@@ -1,5 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common'
-import { AuthUser } from './user.model'
+import { AuthUser } from './domain/user.model'
 
 export const InjectAuthUser = createParamDecorator<
     unknown,
