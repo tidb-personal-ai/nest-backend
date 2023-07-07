@@ -4,7 +4,9 @@ import { AuthUser } from '@user/domain/user.model'
 @Injectable()
 export class AppService {
     getHello(authUser: AuthUser): string {
-        return `Hello ${authUser.email ?? authUser.uid} from Nest!`
+        return `Hello ${
+            authUser.name ?? authUser.email ?? authUser.uid
+        } from Nest`
     }
 
     getStatus(): string {

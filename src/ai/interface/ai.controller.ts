@@ -10,20 +10,24 @@ import {
     RequestData,
 } from '@shared/data_context'
 import { AiService } from '@ai/use_cases/ai.service'
+import { Ai } from '@ai/domain/ai.domain'
 
 @Controller('ai')
 export class AiController {
     constructor(private readonly aiService: AiService) {}
 
     @Get()
-    getAi(): GetAiResponse {
+    @RequestData('ai')
+    getAi(@InjectDataContext() context: DataContext): GetAiResponse {
+        const ai = context.get<Ai>('ai')
         return {
-            exists: false,
+            exists: ai !== null,
+            ai,
         }
     }
 
     @Post('create')
-    @RequestData('ai')
+    @RequestData('ai', 'user')
     async createAi(
         @Body() payload: CreateAiRequest,
         @InjectDataContext() context: DataContext,

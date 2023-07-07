@@ -24,6 +24,8 @@ export class FirebaseAuthService implements OnModuleInit {
         return {
             uid: decodedToken.uid,
             email: decodedToken.email,
+            name: decodedToken.name,
+            picture: decodedToken.picture,
         }
     }
 }

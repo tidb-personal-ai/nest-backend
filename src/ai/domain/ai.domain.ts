@@ -4,3 +4,4 @@ export type Ai = {
 }
 
 export type AiDomain = 'ai'
+export const AiDomain = 'ai'
