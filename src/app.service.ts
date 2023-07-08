@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common'
-import { AuthUser } from '@user/domain/user.model'
+import { User } from '@user/domain/user.model'
 
 @Injectable()
 export class AppService {
-    getHello(authUser: AuthUser): string {
+    getHello(authUser: User): string {
         return `Hello ${
             authUser.name ?? authUser.email ?? authUser.uid
         } from Nest`

@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
-import { AuthUser } from '@user/domain/user.model'
+import { User } from '@user/domain/user.model'
 import { initializeApp } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 
@@ -19,7 +19,7 @@ export class FirebaseAuthService implements OnModuleInit, AuthService {
         }
     }
 
-    async verifyToken(token: string): Promise<AuthUser> {
+    async verifyToken(token: string): Promise<User> {
         const decodedToken = await getAuth().verifyIdToken(token, true)
         return {
             uid: decodedToken.uid,
@@ -41,7 +41,7 @@ export interface AuthService {
      * @throws `Error` if the token is invalid.
      * @throws `Error` if the Firebase app is not initialized.
      */
-    verifyToken(token: string): Promise<AuthUser>
+    verifyToken(token: string): Promise<User>
 }
 
 export const AuthService = Symbol('AuthService')

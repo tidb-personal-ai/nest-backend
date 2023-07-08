@@ -1,10 +1,10 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common'
-import { AuthUser } from './domain/user.model'
+import { User } from './domain/user.model'
 
 export const InjectAuthUser = createParamDecorator<
     unknown,
     ExecutionContext,
-    AuthUser
+    User
 >((_data: unknown, ctx: ExecutionContext) => {
     const req = ctx.switchToHttp().getRequest()
     return req.authUser
