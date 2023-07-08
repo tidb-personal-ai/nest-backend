@@ -5,17 +5,21 @@ import {
     CallHandler,
     HttpStatus,
     HttpException,
+    Logger,
 } from '@nestjs/common'
 import { Observable, throwError } from 'rxjs'
 import { catchError } from 'rxjs/operators'
 
 @Injectable()
 export class ErrorsInterceptor implements NestInterceptor {
+    private logger: Logger = new Logger('ErrorsInterceptor')
+
     constructor(private readonly config: { debug: boolean }) {}
 
     intercept(_: ExecutionContext, next: CallHandler): Observable<any> {
         return next.handle().pipe(
             catchError((err: any) => {
+                this.logger.error(err.message, err.stack)
                 // Forward all HttpExceptions to the requester regardless, this
                 // errors are already processed.
                 if (err instanceof HttpException) return throwError(() => err)
@@ -35,7 +39,9 @@ export class ErrorsInterceptor implements NestInterceptor {
                 } */
 
                 const { code, ...meta } = err
-                const message = err.message || 'unknown error'
+                const message = code
+                    ? err.message || 'Internal server error'
+                    : 'Internal server error'
                 return throwError(
                     () =>
                         new HttpException(

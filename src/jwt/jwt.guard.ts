@@ -1,20 +1,21 @@
 import {
     CanActivate,
     ExecutionContext,
+    Inject,
     Injectable,
     Logger,
     UnauthorizedException,
 } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { IS_PUBLIC_KEY } from './jwt.decorator'
-import { FirebaseAuthService } from './jwt.service'
+import { AuthService } from './jwt.service'
 
 @Injectable()
 export class FirebaseAuthGuard implements CanActivate {
     private readonly logger = new Logger('FirebaseAuthGuard')
     constructor(
         private readonly reflector: Reflector,
-        private readonly authService: FirebaseAuthService,
+        @Inject(AuthService) private readonly authService: AuthService,
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -48,5 +49,30 @@ export class FirebaseAuthGuard implements CanActivate {
     private extractTokenFromHeader(request: any): string | undefined {
         const [type, token] = request.headers.authorization?.split(' ') ?? []
         return type === 'Bearer' ? token : undefined
+    }
+}
+
+@Injectable()
+export class WsAuthGuard implements CanActivate {
+    private readonly logger = new Logger('WsAuthGuard')
+
+    constructor(
+        @Inject(AuthService) private readonly authService: AuthService,
+    ) {}
+
+    canActivate(context: any) {
+        const client = context.switchToWs().getClient()
+        const bearerToken = client.handshake.headers.authorization.split(' ')[1]
+        try {
+            const user = this.authService.verifyToken(bearerToken)
+            client.authUser = user
+            return true
+        } catch (error) {
+            this.logger.error(
+                `Error while verifying token: ${error.message}`,
+                error,
+            )
+            throw new UnauthorizedException('Invalid access token')
+        }
     }
 }

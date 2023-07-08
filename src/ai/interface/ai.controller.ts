@@ -17,7 +17,7 @@ export class AiController {
     constructor(private readonly aiService: AiService) {}
 
     @Get()
-    @RequestData('ai')
+    @RequestData('ai', 'user')
     getAi(@InjectDataContext() context: DataContext): GetAiResponse {
         const ai = context.get<Ai>('ai')
         return {

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common'
 import { APP_GUARD } from '@nestjs/core'
 import { FirebaseAuthGuard } from './jwt.guard'
-import { FirebaseAuthService } from './jwt.service'
+import { AuthService, FirebaseAuthService } from './jwt.service'
 
 @Module({
     providers: [
@@ -9,7 +9,11 @@ import { FirebaseAuthService } from './jwt.service'
             provide: APP_GUARD,
             useClass: FirebaseAuthGuard,
         },
-        FirebaseAuthService,
+        {
+            provide: AuthService,
+            useClass: FirebaseAuthService,
+        },
     ],
+    exports: [AuthService],
 })
 export class JWTModule {}
