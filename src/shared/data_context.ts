@@ -13,7 +13,7 @@ import { Reflector } from '@nestjs/core'
 import { InjectRepository } from '@nestjs/typeorm'
 import { UserDomain } from '@user/domain/user.model'
 import { UserEntity } from '@user/interface/user.database.entity'
-import { Observable, finalize, tap } from 'rxjs'
+import { Observable, tap } from 'rxjs'
 import { DataSource, QueryRunner, Repository } from 'typeorm'
 
 export class DataContext {

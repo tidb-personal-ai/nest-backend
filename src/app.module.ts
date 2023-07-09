@@ -10,7 +10,7 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 import { ConfigType } from '@nestjs/config'
 import appConfig from './app.config'
 import { UserModule } from '@user/user.module'
-import { ChatModule } from './chat/chat.module'
+import { ChatModule } from '@chat/chat.module'
 
 @Module({
     imports: [

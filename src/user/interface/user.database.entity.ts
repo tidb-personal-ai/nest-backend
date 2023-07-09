@@ -1,5 +1,6 @@
 import { AiEntity } from '@ai/interface/ai.database.entities'
-import { Column, Entity, OneToOne, PrimaryColumn } from 'typeorm'
+import { ChatMessageEntity } from '@app/chat/interface/chat.database.entity'
+import { Column, Entity, OneToMany, OneToOne, PrimaryColumn } from 'typeorm'
 
 @Entity()
 export class UserEntity {
@@ -17,4 +18,7 @@ export class UserEntity {
 
     @OneToOne(() => AiEntity, (ai) => ai.user)
     ai: AiEntity
+
+    @OneToMany(() => ChatMessageEntity, (chatMessage) => chatMessage.user)
+    history: ChatMessageEntity[]
 }

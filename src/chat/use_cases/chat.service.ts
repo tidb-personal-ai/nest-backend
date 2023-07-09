@@ -24,9 +24,9 @@ export class ChatService implements OnModuleInit {
     ) {}
 
     onModuleInit() {
-        this.eventBus.on('aiCreated', (event) => {
-            this.handleAiCreated.call(this, event)
-        })
+        this.eventBus.on('aiCreated', (event) =>
+            this.handleAiCreated.call(this, event),
+        )
     }
 
     private async handleAiCreated(event: AiEventMap['aiCreated']) {
@@ -49,6 +49,10 @@ export class ChatService implements OnModuleInit {
             },
         }
         await this.eventBus.emit('chatCompletionRequest', chatCompletionRequest)
+        await this.eventBus.emit('chatMessageCreated', {
+            message: chatCompletionRequest.reply,
+            dataContext: event.dataContext,
+        })
         this.clients.get(user.uid)?.send(chatCompletionRequest.reply.text)
     }
 

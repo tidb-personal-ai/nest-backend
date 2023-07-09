@@ -15,14 +15,16 @@ export class AiCreatorService implements OnModuleInit {
 
     onModuleInit() {
         this.eventBus.on('aiCreated', async (event) => {
-            const ai = this.aiRepository.create({
-                name: event.ai.name,
-                traits: event.ai.traits,
-                user: event.dataContext.get('user'),
-            })
-            await event.dataContext
-                .get<QueryRunner>('transaction')
-                .manager.save(ai)
+            await this.handleAiCreated.call(this, event)
         })
+    }
+
+    private async handleAiCreated(event: AiEvents['aiCreated']) {
+        const ai = this.aiRepository.create({
+            name: event.ai.name,
+            traits: event.ai.traits,
+            user: event.dataContext.get('user'),
+        })
+        await event.dataContext.get<QueryRunner>('transaction').manager.save(ai)
     }
 }

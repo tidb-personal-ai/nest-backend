@@ -18,7 +18,9 @@ export class AiEntity {
     @Column('simple-array')
     traits: string[]
 
-    @OneToOne(() => UserEntity)
+    @OneToOne(() => UserEntity, {
+        onDelete: 'CASCADE',
+    })
     @JoinColumn()
     user: UserEntity
 }

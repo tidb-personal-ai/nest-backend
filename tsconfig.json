@@ -19,6 +19,7 @@
     "noFallthroughCasesInSwitch": false,
     "paths": {
       "@ai/*": ["src/ai/*"],
+      "@chat/*": ["src/chat/*"],
       "@shared/*": ["src/shared/*"],
       "@auth/*": ["src/auth/*"],
       "@user/*": ["src/user/*"],
