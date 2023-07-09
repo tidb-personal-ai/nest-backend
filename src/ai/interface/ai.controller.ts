@@ -27,7 +27,7 @@ export class AiController {
     }
 
     @Post('create')
-    @RequestData('ai', 'user')
+    @RequestData('ai', 'user', 'transaction')
     async createAi(
         @Body() payload: CreateAiRequest,
         @InjectDataContext() context: DataContext,

@@ -3,7 +3,7 @@ import { Inject, Injectable, OnModuleInit } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import * as Emittery from 'emittery'
 import { AiEntity } from './ai.database.entities'
-import { Repository } from 'typeorm'
+import { QueryRunner, Repository } from 'typeorm'
 
 @Injectable()
 export class AiCreatorService implements OnModuleInit {
@@ -20,7 +20,9 @@ export class AiCreatorService implements OnModuleInit {
                 traits: event.ai.traits,
                 user: event.dataContext.get('user'),
             })
-            await this.aiRepository.save(ai)
+            await event.dataContext
+                .get<QueryRunner>('transaction')
+                .manager.save(ai)
         })
     }
 }

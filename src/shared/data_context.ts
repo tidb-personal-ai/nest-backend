@@ -13,8 +13,8 @@ import { Reflector } from '@nestjs/core'
 import { InjectRepository } from '@nestjs/typeorm'
 import { UserDomain } from '@user/domain/user.model'
 import { UserEntity } from '@user/interface/user.database.entity'
-import { Observable } from 'rxjs'
-import { Repository } from 'typeorm'
+import { Observable, finalize, tap } from 'rxjs'
+import { DataSource, QueryRunner, Repository } from 'typeorm'
 
 export class DataContext {
     private readonly _data = new Map<Domain, any>()
@@ -42,6 +42,7 @@ export class DataContextIntercetor implements NestInterceptor {
         private readonly reflector: Reflector,
         @InjectRepository(UserEntity)
         private readonly userRepository: Repository<UserEntity>,
+        private readonly dataSource: DataSource,
     ) {}
 
     async intercept(
@@ -50,6 +51,7 @@ export class DataContextIntercetor implements NestInterceptor {
     ): Promise<Observable<any>> {
         const req = context.switchToHttp().getRequest()
         const dataContext = new DataContext()
+        let transaction: QueryRunner | undefined = undefined
         req.dataContext = dataContext
 
         const domains =
@@ -63,23 +65,54 @@ export class DataContextIntercetor implements NestInterceptor {
             },
         })
         if (!user) {
+            transaction = this.dataSource.createQueryRunner()
+            await transaction.connect()
+            await transaction.startTransaction()
             user = this.userRepository.create({
                 uid: req.authUser.uid,
                 email: req.authUser.email,
                 name: req.authUser.name,
                 picture: req.authUser.picture,
             })
-            await this.userRepository.save(user)
+            await transaction.manager.save(user)
         }
-        domains.forEach((domain) => {
-            if (domain === UserDomain) {
-                dataContext.set(domain, user)
-            } else if (domain === AiDomain) {
-                dataContext.set(domain, user.ai)
-            }
-        })
+        await Promise.all(
+            domains.map(async (domain) => {
+                if (domain === UserDomain) {
+                    dataContext.set(domain, user)
+                } else if (domain === AiDomain) {
+                    dataContext.set(domain, user.ai)
+                } else if (domain === 'transaction') {
+                    if (!transaction) {
+                        transaction = this.dataSource.createQueryRunner()
+                        await transaction.connect()
+                        await transaction.startTransaction()
+                    }
+                    dataContext.set('transaction', transaction)
+                }
+            }),
+        )
 
-        return next.handle()
+        return next.handle().pipe(
+            tap({
+                complete: () => {
+                    if (transaction) {
+                        console.log('complete')
+                        transaction.commitTransaction().finally(() => {
+                            transaction.release()
+                        })
+                    }
+                },
+                error: () => {
+                    if (transaction) {
+                        console.log('error')
+                        transaction.rollbackTransaction().finally(() => {
+                            transaction.release()
+                        })
+                    }
+                },
+            }),
+        )
     }
 }
 
@@ -99,4 +132,4 @@ export const InjectDataContext = createParamDecorator<
     return req.dataContext
 })
 
-export type Domain = AiDomain | UserDomain
+export type Domain = AiDomain | UserDomain | 'transaction'
