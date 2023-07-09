@@ -1,4 +1,4 @@
-import { AuthService } from '@jwt/jwt.service'
+import { AuthService } from '@auth/use_case/auth.service'
 import {
     Inject,
     Logger,
@@ -17,7 +17,7 @@ import {
 } from '@nestjs/websockets'
 import { Server, Socket } from 'socket.io'
 import { WebsocketExceptionsFilter } from './chat.errors'
-import { WsAuthGuard } from '@jwt/jwt.guard'
+import { WsAuthGuard } from '@auth/interface/jwt.guard'
 import { ChatInterface, ChatService } from '../use_cases/chat.service'
 
 /**

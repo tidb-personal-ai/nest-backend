@@ -1,4 +1,4 @@
-import { CodeError } from '@app/errors/error.common'
+import { CodeError } from '@shared/error.common'
 
 export class AiExists extends CodeError {
     public code = 400

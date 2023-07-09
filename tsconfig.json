@@ -20,7 +20,7 @@
     "paths": {
       "@ai/*": ["src/ai/*"],
       "@shared/*": ["src/shared/*"],
-      "@jwt/*": ["src/jwt/*"],
+      "@auth/*": ["src/auth/*"],
       "@user/*": ["src/user/*"],
       "@app/*": ["src/*"],
       "@helpers/*": ["src/helpers/*"],

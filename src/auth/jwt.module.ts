@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common'
 import { APP_GUARD } from '@nestjs/core'
-import { FirebaseAuthGuard } from './jwt.guard'
-import { AuthService, FirebaseAuthService } from './jwt.service'
+import { FirebaseAuthGuard } from './interface/jwt.guard'
+import { FirebaseAuthService } from './interface/jwt.service'
+import { AuthService } from './use_case/auth.service'
 
 @Module({
     providers: [

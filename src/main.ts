@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app.module'
 import { Logger } from '@nestjs/common'
-import { ErrorsInterceptor } from './errors/error.interceptor'
+import { ErrorsInterceptor } from '@shared/error.interceptor'
 import { isDebugEnabled } from 'emittery'
 
 async function bootstrap() {
