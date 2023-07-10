@@ -1,9 +1,13 @@
 import { AiEntity } from '@ai/interface/ai.database.entities'
-import { ChatMessageEntity } from '@app/chat/interface/chat.database.entity'
+import {
+    ChatMessageEntity,
+    ChatSessionEntity,
+} from '@app/chat/interface/chat.database.entity'
+import { User } from '@user/domain/user.model'
 import { Column, Entity, OneToMany, OneToOne, PrimaryColumn } from 'typeorm'
 
 @Entity()
-export class UserEntity {
+export class UserEntity implements User {
     @PrimaryColumn()
     uid: string
 
@@ -21,4 +25,7 @@ export class UserEntity {
 
     @OneToMany(() => ChatMessageEntity, (chatMessage) => chatMessage.user)
     history: ChatMessageEntity[]
+
+    @OneToOne(() => ChatSessionEntity, (session) => session.user)
+    session: ChatSessionEntity
 }

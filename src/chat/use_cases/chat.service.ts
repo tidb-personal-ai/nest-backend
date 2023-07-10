@@ -7,7 +7,12 @@ import {
 } from '../domain/chat.events'
 import { User } from '@user/domain/user.model'
 import { Ai } from '@ai/domain/ai.domain'
-import { ChatMessageType } from '../domain/chat.domain'
+import {
+    ChatMessage,
+    ChatMessageType,
+    ChatSegment,
+} from '../domain/chat.domain'
+import { DataContext } from '@shared/data_context'
 
 export interface ChatInterface {
     id: string
@@ -31,29 +36,33 @@ export class ChatService implements OnModuleInit {
 
     private async handleAiCreated(event: AiEventMap['aiCreated']) {
         const user = event.dataContext.get<User>('user')
-        const chatCompletionRequest: ChatCompletionRequest = {
-            chatSegment: {
-                userId: user.uid,
-                messages: [
-                    {
-                        text: this.buildSystemMessage(event.ai, user),
-                        timestamp: new Date(),
-                        type: ChatMessageType.System,
-                    },
-                    {
-                        text: this.buildFirstUserMessage(),
-                        timestamp: new Date(),
-                        type: ChatMessageType.User,
-                    },
-                ],
-            },
+        const chatSegment: ChatSegment = {
+            userId: user.uid,
+            messages: [
+                {
+                    message: this.buildSystemMessage(event.ai, user),
+                    timestamp: new Date(),
+                    type: ChatMessageType.System,
+                },
+                {
+                    message: this.buildFirstUserMessage(),
+                    timestamp: new Date(),
+                    type: ChatMessageType.User,
+                },
+            ],
         }
+        const chatCompletionRequest: ChatCompletionRequest = { chatSegment }
         await this.eventBus.emit('chatCompletionRequest', chatCompletionRequest)
         await this.eventBus.emit('chatMessageCreated', {
             message: chatCompletionRequest.reply,
             dataContext: event.dataContext,
         })
-        this.clients.get(user.uid)?.send(chatCompletionRequest.reply.text)
+        chatSegment.messages.push(chatCompletionRequest.reply)
+        await this.eventBus.emit('chatSegmentUpdated', {
+            chatSegment,
+            dataContext: event.dataContext,
+        })
+        this.clients.get(user.uid)?.send(chatCompletionRequest.reply.message)
     }
 
     private buildFirstUserMessage() {
@@ -84,5 +93,26 @@ In your relies try to act according to your traits and consider the user's profi
                 this.clients.delete(id)
             }
         })
+    }
+
+    public async getMessageReply(
+        message: ChatMessage,
+        dataContext: DataContext,
+    ) {
+        await this.eventBus.emit('chatMessageCreated', { message, dataContext })
+        const chatSegment = dataContext.get<ChatSegment>('chat-session')
+        chatSegment.messages.push(message)
+        const chatCompletionRequest: ChatCompletionRequest = { chatSegment }
+        await this.eventBus.emit('chatCompletionRequest', chatCompletionRequest)
+        await this.eventBus.emit('chatMessageCreated', {
+            message: chatCompletionRequest.reply,
+            dataContext,
+        })
+        chatSegment.messages.push(chatCompletionRequest.reply)
+        await this.eventBus.emit('chatSegmentUpdated', {
+            chatSegment,
+            dataContext,
+        })
+        return chatCompletionRequest.reply
     }
 }

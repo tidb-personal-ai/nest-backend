@@ -26,10 +26,12 @@ export class WebsocketExceptionsFilter implements ExceptionFilter {
                 : exception.getResponse()
         const details =
             error instanceof Object ? { ...error } : { message: error }
-        client.emit('error', {
-            id: (client as any).id,
-            rid: data.rid,
-            ...details,
-        })
+        if (client.connected) {
+            client.emit('error', {
+                id: (client as any).id,
+                rid: data.rid,
+                ...details,
+            })
+        }
     }
 }

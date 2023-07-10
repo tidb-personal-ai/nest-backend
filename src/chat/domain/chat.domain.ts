@@ -4,7 +4,7 @@ export type ChatSegment = {
 }
 
 export type ChatMessage = {
-    text: string
+    message: string
     timestamp: Date
     type: ChatMessageType
 }
@@ -14,3 +14,6 @@ export enum ChatMessageType {
     Ai = 'ai',
     System = 'system',
 }
+
+export type ChatSessionDomain = 'chat-session'
+export const ChatSessionDomain = 'chat-session'

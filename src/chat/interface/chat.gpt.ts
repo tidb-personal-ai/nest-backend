@@ -56,18 +56,19 @@ export class GptService implements OnModuleInit {
                 }
                 return {
                     role,
-                    content: message.text,
+                    content: message.message,
                 }
             },
         )
         try {
+            //TODO ai messages not included in session
             const response = await this.openAi.createChatCompletion({
                 model: 'gpt-3.5-turbo',
                 messages,
             })
             //TODO handle status code and other errors
             request.reply = {
-                text: response.data.choices[0].message?.content,
+                message: response.data.choices[0].message?.content,
                 timestamp: new Date(),
                 type: ChatMessageType.Ai,
             }

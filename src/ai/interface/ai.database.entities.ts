@@ -1,3 +1,4 @@
+import { Ai } from '@ai/domain/ai.domain'
 import { UserEntity } from '@user/interface/user.database.entity'
 import {
     Column,
@@ -8,7 +9,7 @@ import {
 } from 'typeorm'
 
 @Entity()
-export class AiEntity {
+export class AiEntity implements Ai {
     @PrimaryGeneratedColumn()
     id: number
 

@@ -1,4 +1,5 @@
 import { AiDomain } from '@ai/domain/ai.domain'
+import { ChatSessionDomain } from '@chat/domain/chat.domain'
 import {
     CallHandler,
     ExecutionContext,
@@ -13,7 +14,7 @@ import { Reflector } from '@nestjs/core'
 import { InjectRepository } from '@nestjs/typeorm'
 import { UserDomain } from '@user/domain/user.model'
 import { UserEntity } from '@user/interface/user.database.entity'
-import { Observable, tap } from 'rxjs'
+import { Observable, tap, finalize } from 'rxjs'
 import { DataSource, QueryRunner, Repository } from 'typeorm'
 
 export class DataContext {
@@ -49,19 +50,22 @@ export class DataContextIntercetor implements NestInterceptor {
         context: ExecutionContext,
         next: CallHandler,
     ): Promise<Observable<any>> {
-        const req = context.switchToHttp().getRequest()
+        const dataStore =
+            context.switchToHttp().getRequest() ??
+            context.switchToWs().getClient()
         const dataContext = new DataContext()
         let transaction: QueryRunner | undefined = undefined
-        req.dataContext = dataContext
+        dataStore.dataContext = dataContext
 
         const domains =
             this.reflector.get<Domain[]>('domains', context.getHandler()) ?? []
         let user = await this.userRepository.findOne({
             where: {
-                uid: req.authUser.uid,
+                uid: dataStore.authUser.uid,
             },
             relations: {
                 ai: domains.includes(AiDomain),
+                session: domains.includes(ChatSessionDomain),
             },
         })
         if (!user) {
@@ -69,10 +73,10 @@ export class DataContextIntercetor implements NestInterceptor {
             await transaction.connect()
             await transaction.startTransaction()
             user = this.userRepository.create({
-                uid: req.authUser.uid,
-                email: req.authUser.email,
-                name: req.authUser.name,
-                picture: req.authUser.picture,
+                uid: dataStore.authUser.uid,
+                email: dataStore.authUser.email,
+                name: dataStore.authUser.name,
+                picture: dataStore.authUser.picture,
             })
             await transaction.manager.save(user)
         }
@@ -82,6 +86,8 @@ export class DataContextIntercetor implements NestInterceptor {
                     dataContext.set(domain, user)
                 } else if (domain === AiDomain) {
                     dataContext.set(domain, user.ai)
+                } else if (domain === ChatSessionDomain) {
+                    dataContext.set(domain, user.session)
                 } else if (domain === 'transaction') {
                     if (!transaction) {
                         transaction = this.dataSource.createQueryRunner()
@@ -93,10 +99,12 @@ export class DataContextIntercetor implements NestInterceptor {
             }),
         )
 
+        let final = true
         return next.handle().pipe(
             tap({
                 complete: () => {
                     if (transaction) {
+                        final = false
                         console.log('complete')
                         transaction.commitTransaction().finally(() => {
                             transaction.release()
@@ -105,12 +113,21 @@ export class DataContextIntercetor implements NestInterceptor {
                 },
                 error: () => {
                     if (transaction) {
+                        final = false
                         console.log('error')
                         transaction.rollbackTransaction().finally(() => {
                             transaction.release()
                         })
                     }
                 },
+            }),
+            finalize(() => {
+                if (transaction && final) {
+                    console.log('disconnected')
+                    transaction.commitTransaction().finally(() => {
+                        transaction.release()
+                    })
+                }
             }),
         )
     }
@@ -132,4 +149,4 @@ export const InjectDataContext = createParamDecorator<
     return req.dataContext
 })
 
-export type Domain = AiDomain | UserDomain | 'transaction'
+export type Domain = AiDomain | UserDomain | 'transaction' | ChatSessionDomain

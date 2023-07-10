@@ -38,7 +38,11 @@ export class ErrorsInterceptor implements NestInterceptor {
                     )
                 } */
 
-                const { code, ...meta } = err
+                // eslint-disable-next-line prefer-const
+                let { code, ...meta } = err
+                code = parseInt(code, 10)
+                if (isNaN(code)) code = undefined
+
                 const message = code
                     ? err.message || 'Internal server error'
                     : 'Internal server error'

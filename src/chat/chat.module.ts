@@ -8,14 +8,17 @@ import { ConfigModule } from '@nestjs/config'
 import chatConfig from './chat.config'
 import { ChatDatabaseService } from './interface/chat.database'
 import { TypeOrmModule } from '@nestjs/typeorm'
-import { ChatMessageEntity } from './interface/chat.database.entity'
+import {
+    ChatMessageEntity,
+    ChatSessionEntity,
+} from './interface/chat.database.entity'
 
 @Module({
     imports: [
         UserModule,
         JWTModule,
         ConfigModule.forFeature(chatConfig),
-        TypeOrmModule.forFeature([ChatMessageEntity]),
+        TypeOrmModule.forFeature([ChatMessageEntity, ChatSessionEntity]),
     ],
     providers: [ChatGateway, ChatService, GptService, ChatDatabaseService],
 })

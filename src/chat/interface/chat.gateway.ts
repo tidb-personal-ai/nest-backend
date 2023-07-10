@@ -19,6 +19,13 @@ import { Server, Socket } from 'socket.io'
 import { WebsocketExceptionsFilter } from './chat.errors'
 import { WsAuthGuard } from '@auth/interface/jwt.guard'
 import { ChatInterface, ChatService } from '../use_cases/chat.service'
+import {
+    DataContext,
+    InjectDataContext,
+    RequestData,
+} from '@shared/data_context'
+import { SocketChatMessage } from './chat.gateway.model'
+import { ChatMessageType } from '@chat/domain/chat.domain'
 
 /**
  * Gateway for handling WebSocket connections and messages for chat functionality.
@@ -81,10 +88,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     @SubscribeMessage('chat')
-    handleMessage(@MessageBody() data: unknown): WsResponse<unknown> {
+    @RequestData('transaction', 'user', 'chat-session')
+    async handleMessage(
+        @MessageBody() data: string,
+        @InjectDataContext() dataContext: DataContext,
+    ): Promise<WsResponse<SocketChatMessage>> {
         const event = 'chat'
         this.logger.log(`Received message: ${JSON.stringify(data)}`)
-        return { event, data }
+        const message = await this.chatService.getMessageReply(
+            {
+                message: data,
+                timestamp: new Date(),
+                type: ChatMessageType.User,
+            },
+            dataContext,
+        )
+        return { event, data: message }
     }
 }
 
