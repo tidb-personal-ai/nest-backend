@@ -12,7 +12,7 @@ import {
 import { Server, Socket } from 'socket.io'
 import { WebsocketExceptionsFilter } from './chat.errors'
 import { WsAuthGuard } from '@auth/interface/jwt.guard'
-import { ChatInterface, ChatService } from '../use_cases/chat.service'
+import { ChatInterface, ChatInterfaceMessage, ChatService } from '../use_cases/chat.service'
 import { DataContext, InjectDataContext, RequestData } from '@shared/data_context'
 import { SocketChatMessage } from './chat.gateway.model'
 import { ChatMessageType } from '@chat/domain/chat.domain'
@@ -88,7 +88,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         )
         return {
             event,
-            data: message,
+            data: {
+                message: message.message,
+                timestamp: message.timestamp,
+                id: message.id,
+            },
         }
     }
 }
@@ -100,7 +104,7 @@ class SocketChatInterface implements ChatInterface {
         this.id = socket.id
     }
 
-    send(message: string): void {
+    send(message: ChatInterfaceMessage): void {
         this.socket.emit('chat', message)
     }
 }

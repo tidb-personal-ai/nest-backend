@@ -1,5 +1,3 @@
-export type SocketChatMessage = {
-    message: string
-    timestamp: Date
-    similarity?: number
-}
+import { ChatInterfaceMessage } from '@chat/use_cases/chat.service'
+
+export type SocketChatMessage = ChatInterfaceMessage

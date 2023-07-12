@@ -10,6 +10,7 @@ import { ChatDatabaseService } from './interface/chat.database'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { ChatMessageEntity, ChatSessionEntity, ChatSummaryEntity } from './interface/chat.database.entity'
 import { MilvusClientService } from './interface/chat.milvus'
+import { ChatController } from './interface/chat.controller'
 
 @Module({
     imports: [
@@ -19,5 +20,6 @@ import { MilvusClientService } from './interface/chat.milvus'
         TypeOrmModule.forFeature([ChatMessageEntity, ChatSessionEntity, ChatSummaryEntity]),
     ],
     providers: [ChatGateway, ChatService, GptService, ChatDatabaseService, MilvusClientService],
+    controllers: [ChatController],
 })
 export class ChatModule {}

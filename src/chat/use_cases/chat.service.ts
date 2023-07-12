@@ -18,7 +18,13 @@ import { ConfigType } from '@nestjs/config'
 
 export interface ChatInterface {
     id: string
-    send(message: string): void
+    send(message: ChatInterfaceMessage): void
+}
+
+export type ChatInterfaceMessage = {
+    message: string
+    timestamp: Date
+    id: number
 }
 
 @Injectable()
@@ -65,7 +71,11 @@ export class ChatService implements OnModuleInit {
             chatSegment,
             dataContext: event.dataContext,
         })
-        this.clients.get(user.uid)?.send(chatCompletionRequest.reply.message)
+        this.clients.get(user.uid)?.send({
+            message: chatCompletionRequest.reply.message,
+            timestamp: chatCompletionRequest.reply.timestamp,
+            id: chatCompletionRequest.reply.id,
+        })
     }
 
     private buildFirstUserMessage() {
