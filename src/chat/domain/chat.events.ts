@@ -16,7 +16,9 @@ export type ChatSummaryCreated = {
 
 export type SimilarChatSummaryRequest = {
     message: ChatMessage
+    dataContext: DataContext
     reply?: ChatSummary
+    summaryId?: number
 }
 
 export type ChatMessageCreated = {

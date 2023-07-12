@@ -32,11 +32,7 @@ export class DataContext {
     }
 
     has(key: Domain): boolean {
-        return (
-            this._data.has(key) &&
-            this._data.get(key) !== undefined &&
-            this._data.get(key) !== null
-        )
+        return this._data.has(key) && this._data.get(key) !== undefined && this._data.get(key) !== null
     }
 }
 
@@ -51,19 +47,13 @@ export class DataContextIntercetor implements NestInterceptor {
         private readonly eventBus: Emittery<CommonEventMap>,
     ) {}
 
-    async intercept(
-        context: ExecutionContext,
-        next: CallHandler,
-    ): Promise<Observable<any>> {
-        const dataStore =
-            context.switchToHttp().getRequest() ??
-            context.switchToWs().getClient()
+    async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
+        const dataStore = context.switchToHttp().getRequest() ?? context.switchToWs().getClient()
         const dataContext = new DataContext()
         let transaction: QueryRunner | undefined = undefined
         dataStore.dataContext = dataContext
 
-        const domains =
-            this.reflector.get<Domain[]>('domains', context.getHandler()) ?? []
+        const domains = this.reflector.get<Domain[]>('domains', context.getHandler()) ?? []
         let user = await this.userRepository.findOne({
             where: {
                 uid: dataStore.authUser.uid,
@@ -140,19 +130,14 @@ export class DataContextIntercetor implements NestInterceptor {
 }
 
 export function RequestData(...domains: Domain[]) {
-    return applyDecorators(
-        SetMetadata('domains', domains),
-        UseInterceptors(DataContextIntercetor),
-    )
+    return applyDecorators(SetMetadata('domains', domains), UseInterceptors(DataContextIntercetor))
 }
 
-export const InjectDataContext = createParamDecorator<
-    unknown,
-    ExecutionContext,
-    DataContext
->((_data: unknown, ctx: ExecutionContext) => {
-    const req = ctx.switchToHttp().getRequest()
-    return req.dataContext
-})
+export const InjectDataContext = createParamDecorator<unknown, ExecutionContext, DataContext>(
+    (_data: unknown, ctx: ExecutionContext) => {
+        const req = ctx.switchToHttp().getRequest()
+        return req.dataContext
+    },
+)
 
 export type Domain = AiDomain | UserDomain | 'transaction' | ChatSessionDomain

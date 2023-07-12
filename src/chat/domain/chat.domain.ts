@@ -21,6 +21,8 @@ export type ChatSummary = {
     summary: string
     tags: string[]
     messages?: ChatMessage[]
+    vector?: number[]
+    id?: number
 }
 
 export type ChatSessionDomain = 'chat-session'

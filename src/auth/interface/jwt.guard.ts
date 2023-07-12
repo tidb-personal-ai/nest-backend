@@ -1,11 +1,4 @@
-import {
-    CanActivate,
-    ExecutionContext,
-    Inject,
-    Injectable,
-    Logger,
-    UnauthorizedException,
-} from '@nestjs/common'
+import { CanActivate, ExecutionContext, Inject, Injectable, Logger, UnauthorizedException } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { IS_PUBLIC_KEY } from './jwt.decorator'
 import { AuthService } from '@auth/use_case/auth.service'
@@ -19,10 +12,10 @@ export class FirebaseAuthGuard implements CanActivate {
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
-        const isPublic = this.reflector.getAllAndOverride<boolean>(
-            IS_PUBLIC_KEY,
-            [context.getHandler(), context.getClass()],
-        )
+        const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+            context.getHandler(),
+            context.getClass(),
+        ])
         if (isPublic) {
             return true
         }
@@ -38,10 +31,7 @@ export class FirebaseAuthGuard implements CanActivate {
             request.authUser = user
             return true
         } catch (error) {
-            this.logger.error(
-                `Error while verifying token: ${error.message}`,
-                error,
-            )
+            this.logger.error(`Error while verifying token: ${error.message}`, error)
             throw new UnauthorizedException('Invalid access token')
         }
     }
@@ -56,9 +46,7 @@ export class FirebaseAuthGuard implements CanActivate {
 export class WsAuthGuard implements CanActivate {
     private readonly logger = new Logger('WsAuthGuard')
 
-    constructor(
-        @Inject(AuthService) private readonly authService: AuthService,
-    ) {}
+    constructor(@Inject(AuthService) private readonly authService: AuthService) {}
 
     canActivate(context: any) {
         const client = context.switchToWs().getClient()
@@ -68,10 +56,7 @@ export class WsAuthGuard implements CanActivate {
             client.authUser = user
             return true
         } catch (error) {
-            this.logger.error(
-                `Error while verifying token: ${error.message}`,
-                error,
-            )
+            this.logger.error(`Error while verifying token: ${error.message}`, error)
             throw new UnauthorizedException('Invalid access token')
         }
     }

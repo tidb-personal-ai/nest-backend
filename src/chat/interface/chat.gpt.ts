@@ -6,6 +6,7 @@ import {
     ChatFunctionCall,
     ChatFunctionCallParameter,
     ChatMessageCreated,
+    ChatSummaryCreated,
 } from '../domain/chat.events'
 import {
     ChatCompletionRequestMessage,
@@ -40,14 +41,25 @@ export class GptService implements OnModuleInit {
     onModuleInit() {
         this.eventBus.on(
             'chatCompletionRequest',
-            async (event) =>
-                await this.handleChatCompletionRequest.call(this, event),
+            async (event) => await this.handleChatCompletionRequest.call(this, event),
         )
         this.eventBus.onBefore(
             'chatMessageCreated',
-            async (event) =>
-                await this.handleBeforeChatMessageCreated.call(this, event),
+            async (event) => await this.handleBeforeChatMessageCreated.call(this, event),
         )
+        this.eventBus.onBefore(
+            'chatSummaryCreated',
+            async (event) => await this.handleBeforeChatSummaryCreated.call(this, event),
+        )
+    }
+
+    async handleBeforeChatSummaryCreated(request: ChatSummaryCreated) {
+        request.chatSummary.vector = await this.openAi
+            .createEmbedding({
+                input: request.chatSummary.summary + '\n\n' + request.chatSummary.tags.join(', '),
+                model: 'text-embedding-ada-002',
+            })
+            .then((resp) => resp.data.data[0].embedding)
     }
 
     async handleBeforeChatMessageCreated(request: ChatMessageCreated) {
@@ -78,9 +90,7 @@ export class GptService implements OnModuleInit {
             const message = response.data.choices[0].message
             if (message) {
                 if (message.function_call) {
-                    request.functionCall = convertFunctionCall(
-                        message.function_call,
-                    )
+                    request.functionCall = convertFunctionCall(message.function_call)
                 } else {
                     request.reply = {
                         message: message.content,
@@ -93,12 +103,8 @@ export class GptService implements OnModuleInit {
             throw error
         }
 
-        function convertFunctionCall(
-            functionCall: ChatCompletionRequestMessageFunctionCall,
-        ): ChatFunctionCall {
-            const func = request.chatFunctions?.find(
-                (func) => func.name === functionCall.name,
-            )
+        function convertFunctionCall(functionCall: ChatCompletionRequestMessageFunctionCall): ChatFunctionCall {
+            const func = request.chatFunctions?.find((func) => func.name === functionCall.name)
             if (!func) {
                 throw new InvalidFunctionCall(functionCall.name, functionCall)
             }
@@ -127,72 +133,59 @@ export class GptService implements OnModuleInit {
                 }
                 return (
                     func.parameters?.filter(
-                        (p) =>
-                            p.required &&
-                            (!functionCall.arguments ||
-                                !functionCall.arguments[p.name]),
+                        (p) => p.required && (!functionCall.arguments || !functionCall.arguments[p.name]),
                     ).length == 0
                 )
             }
         }
 
         function convertFunctions() {
-            return request.chatFunctions?.map(
-                (func): ChatCompletionFunctions => {
-                    return {
-                        name: func.name,
-                        description: func.description,
-                        parameters: {
-                            type: 'object',
-                            properties: Object.fromEntries(
-                                func.parameters.map((param) => {
-                                    return [
-                                        param.name,
-                                        {
-                                            type: param.type.toString(),
-                                            description: param.description,
-                                        },
-                                    ]
-                                }),
-                            ),
-                            required: func.parameters
-                                .filter((param) => param.required)
-                                .map((param) => param.name),
-                        },
-                    }
-                },
-            )
+            return request.chatFunctions?.map((func): ChatCompletionFunctions => {
+                return {
+                    name: func.name,
+                    description: func.description,
+                    parameters: {
+                        type: 'object',
+                        properties: Object.fromEntries(
+                            func.parameters.map((param) => {
+                                return [
+                                    param.name,
+                                    {
+                                        type: param.type.toString(),
+                                        description: param.description,
+                                    },
+                                ]
+                            }),
+                        ),
+                        required: func.parameters.filter((param) => param.required).map((param) => param.name),
+                    },
+                }
+            })
         }
 
         function convertMessages() {
-            return request.chatSegment.messages.map(
-                (message): ChatCompletionRequestMessage => {
-                    let role: ChatCompletionRequestMessageRoleEnum
-                    let content = message.message
-                    switch (message.type) {
-                        case ChatMessageType.User:
-                            role = ChatCompletionRequestMessageRoleEnum.User
-                            break
-                        case ChatMessageType.System:
-                            role = ChatCompletionRequestMessageRoleEnum.System
-                            content +=
-                                '\nOnly use the functions you have been provided with.'
-                            break
-                        case ChatMessageType.Ai:
-                            role =
-                                ChatCompletionRequestMessageRoleEnum.Assistant
-                            break
-                        default:
-                            throw new Error(
-                                `Unknown message type: ${message.type}`,
-                            )
-                    }
-                    return {
-                        role,
-                        content,
-                    }
-                },
-            )
+            return request.chatSegment.messages.map((message): ChatCompletionRequestMessage => {
+                let role: ChatCompletionRequestMessageRoleEnum
+                let content = message.message
+                switch (message.type) {
+                    case ChatMessageType.User:
+                        role = ChatCompletionRequestMessageRoleEnum.User
+                        break
+                    case ChatMessageType.System:
+                        role = ChatCompletionRequestMessageRoleEnum.System
+                        content += '\nOnly use the functions you have been provided with.'
+                        break
+                    case ChatMessageType.Ai:
+                        role = ChatCompletionRequestMessageRoleEnum.Assistant
+                        break
+                    default:
+                        throw new Error(`Unknown message type: ${message.type}`)
+                }
+                return {
+                    role,
+                    content,
+                }
+            })
         }
     }
 }

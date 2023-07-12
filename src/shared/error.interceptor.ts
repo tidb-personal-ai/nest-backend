@@ -43,17 +43,11 @@ export class ErrorsInterceptor implements NestInterceptor {
                 code = parseInt(code, 10)
                 if (isNaN(code)) code = undefined
 
-                const message = code
-                    ? err.message || 'Internal server error'
-                    : 'Internal server error'
+                const message = code ? err.message || 'Internal server error' : 'Internal server error'
                 return throwError(
                     () =>
                         new HttpException(
-                            this.config.debug
-                                ? meta
-                                    ? { message, ...meta }
-                                    : message
-                                : message,
+                            this.config.debug ? (meta ? { message, ...meta } : message) : message,
                             code || HttpStatus.INTERNAL_SERVER_ERROR,
                         ),
                 )

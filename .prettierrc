@@ -4,5 +4,6 @@
   "useTabs": false,
   "tabWidth": 4,
   "semi": false,
-  "endOfLine": "auto"
+  "endOfLine": "auto",
+  "printWidth": 120
 }

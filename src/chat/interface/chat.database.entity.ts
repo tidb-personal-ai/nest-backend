@@ -1,14 +1,6 @@
 import { ChatMessage, ChatSegment } from '@chat/domain/chat.domain'
 import { UserEntity } from '@user/interface/user.database.entity'
-import {
-    Column,
-    Entity,
-    JoinColumn,
-    ManyToOne,
-    OneToMany,
-    OneToOne,
-    PrimaryGeneratedColumn,
-} from 'typeorm'
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
 
 export enum Sender {
     User = 'user',
@@ -58,7 +50,9 @@ export class ChatMessageEntity {
     })
     user: UserEntity
 
-    @ManyToOne(() => ChatSummaryEntity, (summary) => summary.messages)
+    @ManyToOne(() => ChatSummaryEntity, (summary) => summary.messages, {
+        onDelete: 'SET NULL',
+    })
     summary: ChatSummaryEntity
 }
 

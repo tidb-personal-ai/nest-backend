@@ -16,19 +16,13 @@ enum ListenerState {
 }
 
 @Injectable()
-export class InterceptableEmittery<
-    EventData = Record<EventName, unknown>,
-> extends Emittery<EventData> {
+export class InterceptableEmittery<EventData = Record<EventName, unknown>> extends Emittery<EventData> {
     private onBeforeMap = new Map<
         keyof EventData,
         Set<
             (
                 eventData: EventData[keyof EventData],
-            ) =>
-                | void
-                | Promise<void>
-                | InterceptionResult
-                | Promise<InterceptionResult>
+            ) => void | Promise<void> | InterceptionResult | Promise<InterceptionResult>
         >
     >()
     private onAfterMap = new Map<
@@ -42,17 +36,9 @@ export class InterceptableEmittery<
         super()
     }
 
-    override async emit<Name extends DatalessEventNames<EventData>>(
-        eventName: Name,
-    ): Promise<void>
-    override async emit<Name extends keyof EventData>(
-        eventName: Name,
-        eventData: EventData[Name],
-    ): Promise<void>
-    override async emit(
-        eventName: unknown,
-        eventData?: unknown,
-    ): Promise<void> {
+    override async emit<Name extends DatalessEventNames<EventData>>(eventName: Name): Promise<void>
+    override async emit<Name extends keyof EventData>(eventName: Name, eventData: EventData[Name]): Promise<void>
+    override async emit(eventName: unknown, eventData?: unknown): Promise<void> {
         const name = eventName as keyof EventData
         const typedEvent = eventData as EventData[keyof EventData]
 
@@ -61,9 +47,7 @@ export class InterceptableEmittery<
         const onBefore = this.onBeforeMap.get(name)
         if (onBefore) {
             const onBeforeListeners = [...onBefore]
-            const results = await Promise.all(
-                onBeforeListeners.map((listener) => listener(typedEvent)),
-            )
+            const results = await Promise.all(onBeforeListeners.map((listener) => listener(typedEvent)))
             if (results.some((result) => result && result.cancel)) {
                 return
             }
@@ -80,9 +64,7 @@ export class InterceptableEmittery<
         const onAfter = this.onAfterMap.get(name)
         if (onAfter) {
             const onAfterListeners = [...onAfter]
-            await Promise.all(
-                onAfterListeners.map((listener) => listener(typedEvent)),
-            )
+            await Promise.all(onAfterListeners.map((listener) => listener(typedEvent)))
         }
     }
 
@@ -90,20 +72,12 @@ export class InterceptableEmittery<
         eventName: Name,
         listener: (
             eventData: EventData[Name],
-        ) =>
-            | void
-            | Promise<void>
-            | InterceptionResult
-            | Promise<InterceptionResult>,
+        ) => void | Promise<void> | InterceptionResult | Promise<InterceptionResult>,
     ): void {
         const listeners = this.onBeforeMap.get(eventName)
         const typedListener = listener as (
             eventData: EventData[keyof EventData],
-        ) =>
-            | void
-            | Promise<void>
-            | InterceptionResult
-            | Promise<InterceptionResult>
+        ) => void | Promise<void> | InterceptionResult | Promise<InterceptionResult>
         if (listeners) {
             listeners.add(typedListener)
         } else {
@@ -116,9 +90,7 @@ export class InterceptableEmittery<
         listener: (eventData: EventData[Name]) => void | Promise<void>,
     ): void {
         const listeners = this.onAfterMap.get(eventName)
-        const typedListener = listener as (
-            eventData: EventData[keyof EventData],
-        ) => void | Promise<void>
+        const typedListener = listener as (eventData: EventData[keyof EventData]) => void | Promise<void>
         if (listeners) {
             listeners.add(typedListener)
         } else {
@@ -126,9 +98,7 @@ export class InterceptableEmittery<
         }
     }
 
-    waitForLatest<Name extends keyof EventData>(
-        eventName: Name,
-    ): Promise<void> {
+    waitForLatest<Name extends keyof EventData>(eventName: Name): Promise<void> {
         const state = this.listernerStates.get(eventName)
         if (state === ListenerState.Idle) {
             return Promise.resolve()

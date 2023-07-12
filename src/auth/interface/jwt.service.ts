@@ -13,10 +13,7 @@ export class FirebaseAuthService implements OnModuleInit, AuthService {
             initializeApp()
             this.logger.log('Firebase initialized')
         } catch (error) {
-            this.logger.error(
-                `Could not initialize Firebase: ${error.message}`,
-                error,
-            )
+            this.logger.error(`Could not initialize Firebase: ${error.message}`, error)
         }
     }
 

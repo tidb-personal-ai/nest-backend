@@ -1,11 +1,5 @@
 import { AuthService } from '@auth/use_case/auth.service'
-import {
-    Inject,
-    Logger,
-    UnauthorizedException,
-    UseFilters,
-    UseGuards,
-} from '@nestjs/common'
+import { Inject, Logger, UnauthorizedException, UseFilters, UseGuards } from '@nestjs/common'
 import {
     MessageBody,
     OnGatewayConnection,
@@ -19,11 +13,7 @@ import { Server, Socket } from 'socket.io'
 import { WebsocketExceptionsFilter } from './chat.errors'
 import { WsAuthGuard } from '@auth/interface/jwt.guard'
 import { ChatInterface, ChatService } from '../use_cases/chat.service'
-import {
-    DataContext,
-    InjectDataContext,
-    RequestData,
-} from '@shared/data_context'
+import { DataContext, InjectDataContext, RequestData } from '@shared/data_context'
 import { SocketChatMessage } from './chat.gateway.model'
 import { ChatMessageType } from '@chat/domain/chat.domain'
 import { GptService } from './chat.gpt'
@@ -63,23 +53,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
      */
     async handleConnection(client: Socket) {
         try {
-            const bearerToken =
-                client.handshake.headers.authorization.split(' ')[1]
+            const bearerToken = client.handshake.headers.authorization.split(' ')[1]
             const user = await this.authService.verifyToken(bearerToken)
-            this.chatService.onChatOpened(
-                user.uid,
-                new SocketChatInterface(client),
-            )
+            this.chatService.onChatOpened(user.uid, new SocketChatInterface(client))
             client.emit('connection', 'Successfully connected to chat')
             this.logger.log(`Client connected: ${client.id}`)
         } catch (error) {
-            this.logger.error(
-                `Error while verifying token: ${error.message}`,
-                error,
-            )
-            const response = new UnauthorizedException(
-                'Invalid access token',
-            ).getResponse() as object
+            this.logger.error(`Error while verifying token: ${error.message}`, error)
+            const response = new UnauthorizedException('Invalid access token').getResponse() as object
             client.emit('error', {
                 id: client.id,
                 ...response,
