@@ -1,16 +1,17 @@
-import { InjectRepository } from '@nestjs/typeorm'
 import { UserEntity } from './user.database.entity'
-import { QueryRunner, Repository } from 'typeorm'
+import { QueryRunner } from 'typeorm'
 import { InjectAuthUser } from '@user/user.context'
-import { Controller, Get, Post } from '@nestjs/common'
+import { Controller, Get, Inject, Post } from '@nestjs/common'
 import { DataContext, InjectDataContext, RequestData } from '@shared/data_context'
 import { User } from '@user/domain/user.model'
+import { EventMap as UserEventMap } from '../domain/user.event'
+import * as Emittery from 'emittery'
 
 @Controller('user')
 export class UserController {
     constructor(
-        @InjectRepository(UserEntity)
-        private readonly userEntity: Repository<UserEntity>,
+        @Inject(Emittery)
+        private readonly eventBus: Emittery<UserEventMap>,
     ) {}
 
     @Get()
@@ -23,5 +24,6 @@ export class UserController {
     @RequestData('transaction')
     async deleteUser(@InjectAuthUser() user: User, @InjectDataContext() dataContext: DataContext): Promise<void> {
         await dataContext.get<QueryRunner>('transaction').manager.delete(UserEntity, { uid: user.uid })
+        await this.eventBus.emit('userDeleted', user)
     }
 }

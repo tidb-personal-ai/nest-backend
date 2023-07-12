@@ -4,6 +4,7 @@ import { ConsistencyLevelEnum, DataType, MilvusClient } from '@zilliz/milvus2-sd
 import * as Emittery from 'emittery'
 import chatConfig from '../chat.config'
 import { EventMap as ChatEventMap } from '../domain/chat.events'
+import { EventMap as UserEventMap } from '@user/domain/user.event'
 import { ConfigType } from '@nestjs/config'
 import { User } from '@user/domain/user.model'
 
@@ -14,7 +15,7 @@ export class MilvusClientService implements OnApplicationBootstrap {
 
     constructor(
         @Inject(Emittery)
-        private readonly eventBus: InterceptableEmittery<ChatEventMap>,
+        private readonly eventBus: InterceptableEmittery<ChatEventMap & UserEventMap>,
         @Inject(chatConfig.KEY)
         private readonly config: ConfigType<typeof chatConfig>,
     ) {}
@@ -31,9 +32,23 @@ export class MilvusClientService implements OnApplicationBootstrap {
         this.eventBus.on('similarChatSummaryRequest', async (event) => {
             await this.handleSimilarSummaryRequest.call(this, event)
         })
+        this.eventBus.on('userDeleted', async (event) => {
+            await this.handleUserDeleted.call(this, event)
+        })
     }
 
-    async handleSimilarSummaryRequest(event: ChatEventMap['similarChatSummaryRequest']) {
+    private async handleUserDeleted(event: UserEventMap['userDeleted']) {
+        const collectionName = this.getSummaryCollectionName(event)
+        const collectionExists = (
+            await this.milvusClient.hasCollection({ collection_name: collectionName })
+        ).value.valueOf()
+        if (collectionExists) {
+            await this.milvusClient.dropCollection({ collection_name: collectionName })
+            this.logger.log(`Successfully dropped collection ${collectionName}.`)
+        }
+    }
+
+    private async handleSimilarSummaryRequest(event: ChatEventMap['similarChatSummaryRequest']) {
         const user = event.dataContext.get<User>('user')
         const collectionName = this.getSummaryCollectionName(user)
         const collectionExists = (
@@ -59,7 +74,7 @@ export class MilvusClientService implements OnApplicationBootstrap {
         return `summaries_${user.uid}`
     }
 
-    async handleChatSummaryCreated(event: ChatEventMap['chatSummaryCreated']) {
+    private async handleChatSummaryCreated(event: ChatEventMap['chatSummaryCreated']) {
         const user = event.dataContext.get<User>('user')
         const collectionName = this.getSummaryCollectionName(user)
         const collectionExists = (

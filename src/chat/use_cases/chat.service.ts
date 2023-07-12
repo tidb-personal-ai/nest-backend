@@ -82,8 +82,8 @@ export class ChatService implements OnModuleInit {
         return 'Hi. Please introduce yourself. You do not need to repeat or mention your traits. Afterward ask me some questions to get to know me better. Pretend that you start the conversation.'
     }
 
-    private buildSystemMessage(ai: Ai, user: User, summary?: string) {
-        let systemMessage = `You are an ai that tries to bond with the user by being a helpful assistant.
+    private buildSystemMessage(ai: Ai, user: User) {
+        return `You are an ai that tries to bond with the user by being a helpful assistant.
 
 This is your profile:
 Name: ${ai.name}
@@ -94,14 +94,6 @@ Name: ${user.name}
 
 In your relies try to act according to your traits and consider the user's profile. Try to imitate the user's style of writing.
 `
-        if (summary) {
-            systemMessage += `
-
-Following is the summary of a similar past conversation. You can use it as a reference.
-
-${summary}`
-        }
-        return systemMessage
     }
 
     public onChatOpened(userId: string, chat: ChatInterface) {
@@ -133,11 +125,7 @@ ${summary}`
             const request: SimilarChatSummaryRequest = { message, dataContext }
             await this.eventBus.emit('similarChatSummaryRequest', request)
 
-            const systemMessage = this.buildSystemMessage(
-                dataContext.get<Ai>('ai'),
-                dataContext.get<User>('user'),
-                request.reply?.summary,
-            )
+            const systemMessage = this.buildSystemMessage(dataContext.get<Ai>('ai'), dataContext.get<User>('user'))
 
             //TODO otimize my having the summary as a ai message
             chatSegment.messages = [
@@ -146,8 +134,16 @@ ${summary}`
                     timestamp: new Date(),
                     type: ChatMessageType.System,
                 },
-                message,
             ]
+            if (request.reply) {
+                chatSegment.messages.push({
+                    message: `Here is what I remember about a conversation we had in the past about a similar topic:
+${request.reply.summary}`,
+                    timestamp: new Date(),
+                    type: ChatMessageType.Ai,
+                })
+            }
+            chatSegment.messages.push(message)
             return await generateResponse.call(this)
         }
 
