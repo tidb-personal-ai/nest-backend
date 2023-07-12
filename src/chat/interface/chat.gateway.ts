@@ -26,6 +26,7 @@ import {
 } from '@shared/data_context'
 import { SocketChatMessage } from './chat.gateway.model'
 import { ChatMessageType } from '@chat/domain/chat.domain'
+import { GptService } from './chat.gpt'
 
 /**
  * Gateway for handling WebSocket connections and messages for chat functionality.
@@ -41,6 +42,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     constructor(
         @Inject(AuthService) private readonly authService: AuthService,
         private readonly chatService: ChatService,
+        private readonly gptService: GptService,
     ) {}
 
     afterInit() {
@@ -88,7 +90,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     @SubscribeMessage('chat')
-    @RequestData('transaction', 'user', 'chat-session')
+    @RequestData('transaction', 'user', 'chat-session', 'ai')
     async handleMessage(
         @MessageBody() data: string,
         @InjectDataContext() dataContext: DataContext,
@@ -103,7 +105,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             },
             dataContext,
         )
-        return { event, data: message }
+        return {
+            event,
+            data: message,
+        }
     }
 }
 

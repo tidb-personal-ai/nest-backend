@@ -3,6 +3,7 @@ import { ChatSessionDomain } from '@chat/domain/chat.domain'
 import {
     CallHandler,
     ExecutionContext,
+    Inject,
     Injectable,
     NestInterceptor,
     SetMetadata,
@@ -14,8 +15,10 @@ import { Reflector } from '@nestjs/core'
 import { InjectRepository } from '@nestjs/typeorm'
 import { UserDomain } from '@user/domain/user.model'
 import { UserEntity } from '@user/interface/user.database.entity'
+import * as Emittery from 'emittery'
 import { Observable, tap, finalize } from 'rxjs'
 import { DataSource, QueryRunner, Repository } from 'typeorm'
+import { EventMap as CommonEventMap } from './events.common'
 
 export class DataContext {
     private readonly _data = new Map<Domain, any>()
@@ -44,6 +47,8 @@ export class DataContextIntercetor implements NestInterceptor {
         @InjectRepository(UserEntity)
         private readonly userRepository: Repository<UserEntity>,
         private readonly dataSource: DataSource,
+        @Inject(Emittery)
+        private readonly eventBus: Emittery<CommonEventMap>,
     ) {}
 
     async intercept(
@@ -88,6 +93,7 @@ export class DataContextIntercetor implements NestInterceptor {
                     dataContext.set(domain, user.ai)
                 } else if (domain === ChatSessionDomain) {
                     dataContext.set(domain, user.session)
+                    await this.eventBus.emit('chatSegmentLoaded', user.session)
                 } else if (domain === 'transaction') {
                     if (!transaction) {
                         transaction = this.dataSource.createQueryRunner()

@@ -2,6 +2,7 @@ import { AiEntity } from '@ai/interface/ai.database.entities'
 import {
     ChatMessageEntity,
     ChatSessionEntity,
+    ChatSummaryEntity,
 } from '@app/chat/interface/chat.database.entity'
 import { User } from '@user/domain/user.model'
 import { Column, Entity, OneToMany, OneToOne, PrimaryColumn } from 'typeorm'
@@ -25,6 +26,9 @@ export class UserEntity implements User {
 
     @OneToMany(() => ChatMessageEntity, (chatMessage) => chatMessage.user)
     history: ChatMessageEntity[]
+
+    @OneToMany(() => ChatSummaryEntity, (chatSummary) => chatSummary.user)
+    summaries: ChatSummaryEntity[]
 
     @OneToOne(() => ChatSessionEntity, (session) => session.user)
     session: ChatSessionEntity

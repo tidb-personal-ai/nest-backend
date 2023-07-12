@@ -5,6 +5,7 @@ import {
     Entity,
     JoinColumn,
     ManyToOne,
+    OneToMany,
     OneToOne,
     PrimaryGeneratedColumn,
 } from 'typeorm'
@@ -12,6 +13,26 @@ import {
 export enum Sender {
     User = 'user',
     Ai = 'ai',
+}
+
+@Entity()
+export class ChatSummaryEntity {
+    @PrimaryGeneratedColumn()
+    id: number
+
+    @Column('text')
+    summary: string
+
+    @Column('simple-array')
+    tags: string[]
+
+    @OneToMany(() => ChatMessageEntity, (message) => message.summary)
+    messages: ChatMessageEntity[]
+
+    @ManyToOne(() => UserEntity, (user) => user.history, {
+        onDelete: 'CASCADE',
+    })
+    user: UserEntity
 }
 
 @Entity()
@@ -36,6 +57,9 @@ export class ChatMessageEntity {
         onDelete: 'CASCADE',
     })
     user: UserEntity
+
+    @ManyToOne(() => ChatSummaryEntity, (summary) => summary.messages)
+    summary: ChatSummaryEntity
 }
 
 @Entity()
