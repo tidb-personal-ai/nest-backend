@@ -6,8 +6,8 @@ import {
     OnGatewayDisconnect,
     WebSocketGateway,
     WebSocketServer,
-    WsResponse,
     SubscribeMessage,
+    ConnectedSocket,
 } from '@nestjs/websockets'
 import { Server, Socket } from 'socket.io'
 import { WebsocketExceptionsFilter } from './chat.errors'
@@ -15,7 +15,7 @@ import { WsAuthGuard } from '@auth/interface/jwt.guard'
 import { ChatInterface, ChatInterfaceMessage, ChatService } from '../use_cases/chat.service'
 import { DataContext, InjectDataContext, RequestData } from '@shared/data_context'
 import { SocketChatMessage } from './chat.gateway.model'
-import { ChatMessageType } from '@chat/domain/chat.domain'
+import { ChatMessage, ChatMessageType } from '@chat/domain/chat.domain'
 import { GptService } from './chat.gpt'
 
 /**
@@ -53,7 +53,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
      */
     async handleConnection(client: Socket) {
         try {
-            const bearerToken = client.handshake.headers.authorization.split(' ')[1]
+            const bearerToken = (client.handshake.query['Authorization'] as string).split(' ')[1]
             const user = await this.authService.verifyToken(bearerToken)
             this.chatService.onChatOpened(user.uid, new SocketChatInterface(client))
             client.emit('connection', 'Successfully connected to chat')
@@ -75,24 +75,27 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     async handleMessage(
         @MessageBody() data: string,
         @InjectDataContext() dataContext: DataContext,
-    ): Promise<WsResponse<SocketChatMessage>> {
+        @ConnectedSocket() client: Socket,
+    ): Promise<SocketChatMessage> {
         const event = 'chat'
         this.logger.log(`Received message: ${JSON.stringify(data)}`)
-        const message = await this.chatService.getMessageReply(
-            {
-                message: data,
-                timestamp: new Date(),
-                type: ChatMessageType.User,
-            },
-            dataContext,
-        )
+        const originalMessage: ChatMessage = {
+            message: data,
+            timestamp: new Date(),
+            type: ChatMessageType.User,
+        }
+        //TODO return acknowledgment immediately and send message later
+        const message = await this.chatService.getMessageReply(originalMessage, dataContext)
+        this.logger.log(`Send message: ${JSON.stringify(message)}`)
+        client.emit(event, {
+            message: message.message,
+            timestamp: message.timestamp,
+            id: message.id,
+        })
         return {
-            event,
-            data: {
-                message: message.message,
-                timestamp: message.timestamp,
-                id: message.id,
-            },
+            message: originalMessage.message,
+            timestamp: originalMessage.timestamp,
+            id: originalMessage.id,
         }
     }
 }

@@ -50,7 +50,7 @@ export class WsAuthGuard implements CanActivate {
 
     canActivate(context: any) {
         const client = context.switchToWs().getClient()
-        const bearerToken = client.handshake.headers.authorization.split(' ')[1]
+        const bearerToken = (client.handshake.query['Authorization'] as string).split(' ')[1]
         try {
             const user = this.authService.verifyToken(bearerToken)
             client.authUser = user

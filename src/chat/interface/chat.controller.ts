@@ -1,4 +1,4 @@
-import { Body, Controller, Get } from '@nestjs/common'
+import { Controller, Get, Query } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { ChatMessageEntity, Sender } from './chat.database.entity'
 import { Between, MoreThanOrEqual, Repository } from 'typeorm'
@@ -15,7 +15,7 @@ export class ChatController {
 
     @Get()
     async getChatMessages(
-        @Body() payload: GetMessagesRequest,
+        @Query() payload: GetMessagesRequest,
         @InjectAuthUser() user: User,
     ): Promise<GetMessagesResponse> {
         const { fromId, toId } = payload
