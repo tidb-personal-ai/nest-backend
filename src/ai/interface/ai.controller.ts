@@ -13,8 +13,14 @@ export class AiController {
     getAi(@InjectDataContext() context: DataContext): GetAiResponse {
         const ai = context.get<Ai>('ai')
         return {
-            exists: ai !== null,
-            ai,
+            exists: ai !== undefined && ai !== null,
+            ai:
+                ai !== undefined && ai !== null
+                    ? {
+                          name: ai.name,
+                          traits: ai.traits,
+                      }
+                    : undefined,
         }
     }
 

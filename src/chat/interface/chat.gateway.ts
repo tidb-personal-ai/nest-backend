@@ -23,7 +23,13 @@ import { QueryRunner } from 'typeorm'
  * Gateway for handling WebSocket connections and messages for chat functionality.
  * Implements the `OnGatewayConnection` and `OnGatewayDisconnect` interfaces.
  */
-@WebSocketGateway()
+@WebSocketGateway({
+    cors: {
+        origin: '*',
+        methods: ['GET', 'POST'],
+        credentials: true,
+    },
+})
 @UseFilters(WebsocketExceptionsFilter)
 @UseGuards(WsAuthGuard)
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
