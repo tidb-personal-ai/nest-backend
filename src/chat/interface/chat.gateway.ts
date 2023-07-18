@@ -60,7 +60,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
      */
     async handleConnection(client: Socket) {
         try {
-            const bearerToken = (client.handshake.query['Authorization'] as string).split(' ')[1]
+            const bearerToken = (client.handshake.auth['Authorization'] as string).split(' ')[1]
             const user = await this.authService.verifyToken(bearerToken)
             this.chatService.onChatOpened(user.uid, new SocketChatInterface(client))
             client.emit('connection', 'Successfully connected to chat')
