@@ -17,6 +17,7 @@ import { DataContext, InjectDataContext, RequestData } from '@shared/data_contex
 import { SocketChatMessage } from './chat.gateway.model'
 import { ChatMessage, ChatMessageType } from '@chat/domain/chat.domain'
 import { GptService } from './chat.gpt'
+import { QueryRunner } from 'typeorm'
 
 /**
  * Gateway for handling WebSocket connections and messages for chat functionality.
@@ -71,31 +72,53 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     @SubscribeMessage('chat')
-    @RequestData('transaction', 'user', 'chat-session', 'ai')
+    @RequestData('ongoing-transaction', 'user', 'chat-session', 'ai')
     async handleMessage(
         @MessageBody() data: string,
         @InjectDataContext() dataContext: DataContext,
         @ConnectedSocket() client: Socket,
     ): Promise<SocketChatMessage> {
-        const event = 'chat'
-        this.logger.log(`Received message: ${JSON.stringify(data)}`)
-        const originalMessage: ChatMessage = {
-            message: data,
-            timestamp: new Date(),
-            type: ChatMessageType.User,
+        this.logger.log('Received message')
+        const acknowledgment = await this.chatService.getMessageAcknowledged(
+            {
+                message: data,
+                timestamp: new Date(),
+                type: ChatMessageType.User,
+            },
+            dataContext,
+        )
+
+        setImmediate(() => {
+            this.executeWithTransaction(dataContext, () => this.sendMessageReply(dataContext, client, acknowledgment))
+        })
+        return {
+            message: acknowledgment.message,
+            timestamp: acknowledgment.timestamp,
+            id: acknowledgment.id,
         }
-        //TODO return acknowledgment immediately and send message later
+    }
+
+    private async sendMessageReply(dataContext: DataContext, client, originalMessage: ChatMessage) {
         const message = await this.chatService.getMessageReply(originalMessage, dataContext)
-        this.logger.log(`Send message: ${JSON.stringify(message)}`)
-        client.emit(event, {
+        this.logger.log('Sending message reply')
+        client.emit('chat', {
             message: message.message,
             timestamp: message.timestamp,
             id: message.id,
         })
-        return {
-            message: originalMessage.message,
-            timestamp: originalMessage.timestamp,
-            id: originalMessage.id,
+    }
+
+    private async executeWithTransaction<T>(dataContext: DataContext, callback: () => Promise<T>): Promise<T> {
+        const transation = dataContext.get<QueryRunner>('transaction')
+        try {
+            const result = await callback()
+            await transation.commitTransaction()
+            return result
+        } catch (error) {
+            await transation.rollbackTransaction()
+            this.logger.error(`Error while executing transaction: ${error.message}`, error)
+        } finally {
+            await transation.release()
         }
     }
 }

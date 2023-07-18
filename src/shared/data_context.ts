@@ -51,6 +51,7 @@ export class DataContextIntercetor implements NestInterceptor {
         const dataStore = context.switchToHttp().getRequest() ?? context.switchToWs().getClient()
         const dataContext = new DataContext()
         let transaction: QueryRunner | undefined = undefined
+        let ongoingTransaction: QueryRunner | undefined = undefined
         dataStore.dataContext = dataContext
 
         const domains = this.reflector.get<Domain[]>('domains', context.getHandler()) ?? []
@@ -91,6 +92,11 @@ export class DataContextIntercetor implements NestInterceptor {
                         await transaction.startTransaction()
                     }
                     dataContext.set('transaction', transaction)
+                } else if (domain === 'ongoing-transaction') {
+                    ongoingTransaction = this.dataSource.createQueryRunner()
+                    await ongoingTransaction.connect()
+                    await ongoingTransaction.startTransaction()
+                    dataContext.set('transaction', ongoingTransaction)
                 }
             }),
         )
@@ -101,7 +107,6 @@ export class DataContextIntercetor implements NestInterceptor {
                 complete: () => {
                     if (transaction) {
                         final = false
-                        console.log('complete')
                         transaction.commitTransaction().finally(() => {
                             transaction.release()
                         })
@@ -110,16 +115,17 @@ export class DataContextIntercetor implements NestInterceptor {
                 error: () => {
                     if (transaction) {
                         final = false
-                        console.log('error')
                         transaction.rollbackTransaction().finally(() => {
                             transaction.release()
                         })
                     }
+                    ongoingTransaction?.rollbackTransaction().finally(() => {
+                        ongoingTransaction?.release()
+                    })
                 },
             }),
             finalize(() => {
                 if (transaction && final) {
-                    console.log('disconnected')
                     transaction.commitTransaction().finally(() => {
                         transaction.release()
                     })
@@ -140,4 +146,4 @@ export const InjectDataContext = createParamDecorator<unknown, ExecutionContext,
     },
 )
 
-export type Domain = AiDomain | UserDomain | 'transaction' | ChatSessionDomain
+export type Domain = AiDomain | UserDomain | 'transaction' | 'ongoing-transaction' | ChatSessionDomain

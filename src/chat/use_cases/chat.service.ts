@@ -108,8 +108,12 @@ In your relies try to act according to your traits and consider the user's profi
         })
     }
 
-    public async getMessageReply(message: ChatMessage, dataContext: DataContext): Promise<ChatMessage> {
+    public async getMessageAcknowledged(message: ChatMessage, dataContext: DataContext) {
         await this.eventBus.emit('chatMessageCreated', { message, dataContext })
+        return message
+    }
+
+    public async getMessageReply(message: ChatMessage, dataContext: DataContext): Promise<ChatMessage> {
         const chatSegment = dataContext.get<ChatSegment>('chat-session')
         const similarity: number = calculateSimilarity(chatSegment.messages.slice(-1)[0].vector, message.vector)
         if (similarity > this.config.similarityThreshold) {
