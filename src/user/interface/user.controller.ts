@@ -1,5 +1,3 @@
-import { UserEntity } from './user.database.entity'
-import { QueryRunner } from 'typeorm'
 import { InjectAuthUser } from '@user/user.context'
 import { Controller, Get, Inject, Post } from '@nestjs/common'
 import { DataContext, InjectDataContext, RequestData } from '@shared/data_context'
@@ -21,9 +19,7 @@ export class UserController {
     }
 
     @Post('delete')
-    @RequestData('transaction')
-    async deleteUser(@InjectAuthUser() user: User, @InjectDataContext() dataContext: DataContext): Promise<void> {
-        await dataContext.get<QueryRunner>('transaction').manager.delete(UserEntity, { uid: user.uid })
+    async deleteUser(@InjectAuthUser() user: User): Promise<void> {
         await this.eventBus.emit('userDeleted', user)
     }
 }

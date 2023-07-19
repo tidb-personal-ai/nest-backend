@@ -34,6 +34,7 @@
     "cos-similarity": "^1.1.1",
     "emittery": "^0.13.1",
     "firebase-admin": "^11.9.0",
+    "gpt-3-encoder": "^1.1.4",
     "mysql2": "^3.5.0",
     "openai": "^3.3.0",
     "reflect-metadata": "^0.1.13",

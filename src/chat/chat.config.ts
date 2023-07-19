@@ -9,4 +9,5 @@ export default registerAs('chat', () => ({
         token: process.env.MILVUS_TOKEN,
     },
     similarityThreshold: parseFloat(process.env.SIMILARITY_THRESHOLD) || 0.72,
+    maxTokens: parseInt(process.env.MAX_TOKENS) || 3800,
 }))

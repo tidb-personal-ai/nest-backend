@@ -85,6 +85,8 @@ export class GptService implements OnModuleInit {
                           name: forcedFunction,
                       }
                     : undefined,
+                temperature: 0.5,
+                top_p: 0.5,
             })
             //TODO handle status code and other errors
             const message = response.data.choices[0].message

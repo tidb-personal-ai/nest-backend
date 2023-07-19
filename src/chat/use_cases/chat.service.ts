@@ -9,12 +9,13 @@ import {
 } from '../domain/chat.events'
 import { User } from '@user/domain/user.model'
 import { Ai } from '@ai/domain/ai.domain'
-import { ChatMessage, ChatMessageType, ChatSegment } from '../domain/chat.domain'
+import { ChatMessage, ChatMessageType, ChatSegment, ChatSummary } from '../domain/chat.domain'
 import { DataContext } from '@shared/data_context'
 import { InvalidFunctionCall, NoAiResponse } from '@chat/domain/chat.errors'
 import * as calculateSimilarity from 'cos-similarity'
 import chatConfig from '../chat.config'
 import { ConfigType } from '@nestjs/config'
+import { encode } from 'gpt-3-encoder'
 
 export interface ChatInterface {
     id: string
@@ -116,11 +117,37 @@ In your relies try to act according to your traits and consider the user's profi
     public async getMessageReply(message: ChatMessage, dataContext: DataContext): Promise<ChatMessage> {
         const chatSegment = dataContext.get<ChatSegment>('chat-session')
         const similarity: number = calculateSimilarity(chatSegment.messages.slice(-1)[0].vector, message.vector)
-        if (similarity > this.config.similarityThreshold) {
+        if (this.calculateTokens([...chatSegment.messages, message]) > this.config.maxTokens) {
+            return await summarizeTopic.call(this)
+        } else if (similarity > this.config.similarityThreshold) {
             chatSegment.messages.push(message)
             return await generateResponse.call(this)
         }
         return await changeTopic.call(this)
+
+        async function summarizeTopic(this: ChatService): Promise<ChatMessage> {
+            this.logger.log(`Summarize topic for user ${dataContext.get<User>('user').uid}`)
+            const summary = await this.generateSummary(chatSegment.messages, dataContext)
+
+            const systemMessage = this.buildSystemMessage(dataContext.get<Ai>('ai'), dataContext.get<User>('user'))
+
+            //TODO otimize my having the summary as a ai message
+            chatSegment.messages = [
+                {
+                    message: systemMessage,
+                    timestamp: new Date(),
+                    type: ChatMessageType.System,
+                },
+                {
+                    message: `Here is the summary of our conversation so far:
+${summary.summary}`,
+                    timestamp: new Date(),
+                    type: ChatMessageType.Ai,
+                },
+                message,
+            ]
+            return await generateResponse.call(this)
+        }
 
         async function changeTopic(this: ChatService): Promise<ChatMessage> {
             this.logger.log(`Change topic for user ${dataContext.get<User>('user').uid}`)
@@ -186,6 +213,10 @@ ${request.reply.summary}`,
         }
     }
 
+    private calculateTokens(messages: ChatMessage[]) {
+        return encode(messages.map((m) => m.message).join(' ')).length
+    }
+
     private async generateSummary(chatSegment: ChatMessage[], dataContext: DataContext) {
         try {
             const chatCompletionRequest: ChatCompletionRequest = {
@@ -228,17 +259,19 @@ ${request.reply.summary}`,
                 const ids = chatSegment.filter((m) => m.id).map((m) => m.id)
                 this.logger.error(`Summary generation failed for messages ${Math.min(...ids)} - ${Math.max(...ids)}`)
             }
+            const chatSummary: ChatSummary = {
+                summary: chatCompletionRequest.functionCall.parameters.find((p) => p.name === 'summary')?.value,
+                tags: chatCompletionRequest.functionCall.parameters
+                    .find((p) => p.name === 'tags')
+                    ?.value.split(',')
+                    .map((t) => t.trim()),
+                messages: chatSegment,
+            }
             await this.eventBus.emit('chatSummaryCreated', {
-                chatSummary: {
-                    summary: chatCompletionRequest.functionCall.parameters.find((p) => p.name === 'summary')?.value,
-                    tags: chatCompletionRequest.functionCall.parameters
-                        .find((p) => p.name === 'tags')
-                        ?.value.split(',')
-                        .map((t) => t.trim()),
-                    messages: chatSegment,
-                },
+                chatSummary,
                 dataContext,
             })
+            return chatSummary
         } catch (e) {
             this.logger.error(`Summary generation failed: ${e.message}`, e.stack)
         }
