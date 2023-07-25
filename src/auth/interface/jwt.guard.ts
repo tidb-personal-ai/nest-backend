@@ -48,11 +48,11 @@ export class WsAuthGuard implements CanActivate {
 
     constructor(@Inject(AuthService) private readonly authService: AuthService) {}
 
-    canActivate(context: any) {
+    async canActivate(context: any) {
         const client = context.switchToWs().getClient()
         const bearerToken = (client.handshake.auth['Authorization'] as string).split(' ')[1]
         try {
-            const user = this.authService.verifyToken(bearerToken)
+            const user = await this.authService.verifyToken(bearerToken)
             client.authUser = user
             return true
         } catch (error) {
