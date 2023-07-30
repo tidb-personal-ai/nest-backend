@@ -101,7 +101,38 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             message: acknowledgment.message,
             timestamp: acknowledgment.timestamp,
             id: acknowledgment.id,
+            sender: 'user',
         }
+    }
+
+    @SubscribeMessage('speech')
+    @RequestData('ongoing-transaction', 'user', 'chat-session', 'ai')
+    async handleAudio(
+        @MessageBody() data: string,
+        @InjectDataContext() dataContext: DataContext,
+        @ConnectedSocket() client: Socket,
+    ): Promise<string> {
+        const acknowledgment = await this.chatService.getAudioMessageAcknowledged(data, dataContext)
+        client.emit('chat', {
+            message: acknowledgment.message,
+            timestamp: acknowledgment.timestamp,
+            id: acknowledgment.id,
+            sender: 'user',
+        })
+
+        setImmediate(() => {
+            this.executeWithTransaction(dataContext, () =>
+                this.sendAudioMessageReply(dataContext, client, acknowledgment),
+            )
+        })
+        return 'ack'
+    }
+
+    private async sendAudioMessageReply(dataContext: DataContext, client, originalMessage: ChatMessage) {
+        const message = await this.sendMessageReply(dataContext, client, originalMessage)
+        const response = await this.chatService.getAudioMessageResponse(message)
+        this.logger.log('Sending audio reply')
+        client.emit('speech', response)
     }
 
     private async sendMessageReply(dataContext: DataContext, client, originalMessage: ChatMessage) {
@@ -111,7 +142,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             message: message.message,
             timestamp: message.timestamp,
             id: message.id,
+            sender: 'ai',
         })
+        return message
     }
 
     private async executeWithTransaction<T>(dataContext: DataContext, callback: () => Promise<T>): Promise<T> {

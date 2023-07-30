@@ -2,6 +2,8 @@ import { Inject, Injectable, OnModuleInit, Logger } from '@nestjs/common'
 import * as Emittery from 'emittery'
 import { EventMap as AiEventMap } from '@ai/domain/ai.events'
 import {
+    AudioSynthesisRequest,
+    AudioTranscriptionRequest,
     ChatCompletionRequest,
     EventMap as ChatEventMap,
     ChatFunctionParameterType,
@@ -26,7 +28,10 @@ export type ChatInterfaceMessage = {
     message: string
     timestamp: Date
     id: number
+    sender?: ChatInterfaceSender
 }
+
+export type ChatInterfaceSender = 'user' | 'ai'
 
 @Injectable()
 export class ChatService implements OnModuleInit {
@@ -112,6 +117,22 @@ In your relies try to act according to your traits and consider the user's profi
     public async getMessageAcknowledged(message: ChatMessage, dataContext: DataContext) {
         await this.eventBus.emit('chatMessageCreated', { message, dataContext })
         return message
+    }
+
+    public async getAudioMessageAcknowledged(audioData: string, dataContext: DataContext) {
+        const audioMessageRequest: AudioTranscriptionRequest = {
+            audio: audioData,
+        }
+        await this.eventBus.emit('audioTranscriptionRequest', audioMessageRequest)
+        return this.getMessageAcknowledged(audioMessageRequest.reply, dataContext)
+    }
+
+    public async getAudioMessageResponse(message: ChatMessage) {
+        const audioSynthesisRequest: AudioSynthesisRequest = {
+            message,
+        }
+        await this.eventBus.emit('audioSynthesisRequest', audioSynthesisRequest)
+        return audioSynthesisRequest.reply
     }
 
     public async getMessageReply(message: ChatMessage, dataContext: DataContext): Promise<ChatMessage> {

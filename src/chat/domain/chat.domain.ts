@@ -11,6 +11,12 @@ export type ChatMessage = {
     id?: number
 }
 
+export type AudioMessage = {
+    audio: string
+    mime: string
+    id: number
+}
+
 export enum ChatMessageType {
     User = 'user',
     Ai = 'ai',

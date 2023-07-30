@@ -11,6 +11,8 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 import { ChatMessageEntity, ChatSessionEntity, ChatSummaryEntity } from './interface/chat.database.entity'
 import { MilvusClientService } from './interface/chat.milvus'
 import { ChatController } from './interface/chat.controller'
+import { DeepgramClientService } from './interface/chat.deepgram'
+import { GoogleT2SService } from './interface/chat.google-t2s'
 
 @Module({
     imports: [
@@ -19,7 +21,15 @@ import { ChatController } from './interface/chat.controller'
         ConfigModule.forFeature(chatConfig),
         TypeOrmModule.forFeature([ChatMessageEntity, ChatSessionEntity, ChatSummaryEntity]),
     ],
-    providers: [ChatGateway, ChatService, GptService, ChatDatabaseService, MilvusClientService],
+    providers: [
+        ChatGateway,
+        ChatService,
+        GptService,
+        ChatDatabaseService,
+        MilvusClientService,
+        DeepgramClientService,
+        GoogleT2SService,
+    ],
     controllers: [ChatController],
 })
 export class ChatModule {}

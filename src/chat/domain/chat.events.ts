@@ -1,5 +1,5 @@
 import { DataContext } from '@shared/data_context'
-import { ChatMessage, ChatSegment, ChatSummary } from './chat.domain'
+import { AudioMessage, ChatMessage, ChatSegment, ChatSummary } from './chat.domain'
 
 export type EventMap = {
     chatCompletionRequest: ChatCompletionRequest
@@ -7,6 +7,18 @@ export type EventMap = {
     chatSegmentUpdated: ChatSegmentUpdated
     similarChatSummaryRequest: SimilarChatSummaryRequest
     chatSummaryCreated: ChatSummaryCreated
+    audioTranscriptionRequest: AudioTranscriptionRequest
+    audioSynthesisRequest: AudioSynthesisRequest
+}
+
+export type AudioSynthesisRequest = {
+    message: ChatMessage
+    reply?: AudioMessage
+}
+
+export type AudioTranscriptionRequest = {
+    audio: string
+    reply?: ChatMessage
 }
 
 export type ChatSummaryCreated = {
