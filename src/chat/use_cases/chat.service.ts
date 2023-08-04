@@ -30,6 +30,7 @@ export type ChatInterfaceMessage = {
     timestamp: Date
     id: number
     sender?: ChatInterfaceSender
+    isFunctionCall?: boolean
 }
 
 export type ChatInterfaceSender = 'user' | 'ai'
@@ -227,8 +228,9 @@ ${request.reply.summary}`,
             return await generateResponse.call(this)
         }
 
-        async function generateResponse(this: ChatService): Promise<ChatMessage> {
+        async function generateResponse(this: ChatService, isFunctionCall: boolean = false): Promise<ChatMessage> {
             const processChatReply = async (): Promise<ChatMessage> => {
+                chatCompletionRequest.reply.isFunctionCall = isFunctionCall
                 await this.eventBus.emit('chatMessageCreated', {
                     message: chatCompletionRequest.reply,
                     dataContext,
@@ -276,7 +278,7 @@ ${request.reply.summary}`,
                     type: ChatMessageType.Function,
                     functionName: chatCompletionRequest.functionCall.name.toLowerCase()
                 })
-                return await generateResponse.call(this)
+                return await generateResponse.call(this, true)
             }
 
             const processChatFunctionCall = async (): Promise<ChatMessage> => {
@@ -297,7 +299,7 @@ ${request.reply.summary}`,
                             type: ChatMessageType.Function,
                             functionName: chatCompletionRequest.functionCall.name.toLowerCase()
                         })
-                        return await generateResponse.call(this)
+                        return await generateResponse.call(this, true)
                     case 'remember':
                         return await processRemember()              
                     default:

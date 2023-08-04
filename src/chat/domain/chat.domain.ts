@@ -10,6 +10,7 @@ export type ChatMessage = {
     functionName?: string
     vector?: number[]
     id?: number
+    isFunctionCall?: boolean
 }
 
 export type AudioMessage = {

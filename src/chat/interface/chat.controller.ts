@@ -56,6 +56,7 @@ export class ChatController {
                     timestamp: message.timestamp,
                     id: message.id,
                     sender: message.sender === Sender.User ? 'user' : 'ai',
+                    isFunctionCall: message.isFunctionCall,
                 }),
             ),
         }

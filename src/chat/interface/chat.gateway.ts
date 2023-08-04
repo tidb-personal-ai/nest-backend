@@ -138,12 +138,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private async sendMessageReply(dataContext: DataContext, client, originalMessage: ChatMessage) {
         const message = await this.chatService.getMessageReply(originalMessage, dataContext)
         this.logger.log('Sending message reply')
-        client.emit('chat', {
-            message: message.message,
-            timestamp: message.timestamp,
-            id: message.id,
-            sender: 'ai',
-        })
+        client.emit('chat', message.isFunctionCall !== undefined 
+            ? {
+                message: message.message,
+                timestamp: message.timestamp,
+                id: message.id,
+                sender: 'ai',
+                isFunctionCall: message.isFunctionCall,
+            }
+            : {
+                message: message.message,
+                timestamp: message.timestamp,
+                id: message.id,
+                sender: 'ai',
+            }
+        )
         return message
     }
 

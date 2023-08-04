@@ -12,6 +12,7 @@ export type ResponseMessage = {
     message: string
     timestamp: Date
     sender: MessageSender
+    isFunctionCall: boolean
 }
 
 export type MessageSender = 'user' | 'ai'

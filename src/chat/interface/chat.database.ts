@@ -89,6 +89,7 @@ export class ChatDatabaseService implements OnModuleInit {
             message: event.message.message,
             timestamp: event.message.timestamp,
             sender: sender,
+            isFunctionCall: event.message.isFunctionCall !== undefined ? event.message.isFunctionCall : false,
             user: event.dataContext.get('user'),
         })
         const transaction = event.dataContext.get<QueryRunner>('transaction')

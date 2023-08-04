@@ -38,6 +38,9 @@ export class ChatMessageEntity {
     @Column('text')
     message: string
 
+    @Column()
+    isFunctionCall: boolean
+
     @Column({
         type: 'enum',
         enum: Sender,
