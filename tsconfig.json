@@ -26,5 +26,8 @@
       "@app/*": ["src/*"],
       "@helpers/*": ["src/helpers/*"],
     }
+  },
+  "ts-node": {
+    "swc": true
   }
 }

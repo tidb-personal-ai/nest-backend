@@ -7,6 +7,7 @@ export type ChatMessage = {
     message: string
     timestamp: Date
     type: ChatMessageType
+    functionName?: string
     vector?: number[]
     id?: number
 }
@@ -21,6 +22,7 @@ export enum ChatMessageType {
     User = 'user',
     Ai = 'ai',
     System = 'system',
+    Function = 'function'
 }
 
 export type ChatSummary = {

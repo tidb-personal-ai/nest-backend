@@ -80,5 +80,5 @@ export enum ChatFunctionParameterType {
     String = 'string',
     Number = 'number',
     Boolean = 'boolean',
-    Enum = 'enum',
+    Enum = 'string',
 }

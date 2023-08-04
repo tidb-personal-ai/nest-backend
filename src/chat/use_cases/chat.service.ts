@@ -6,6 +6,7 @@ import {
     AudioTranscriptionRequest,
     ChatCompletionRequest,
     EventMap as ChatEventMap,
+    ChatFunction,
     ChatFunctionParameterType,
     SimilarChatSummaryRequest,
 } from '../domain/chat.events'
@@ -85,21 +86,48 @@ export class ChatService implements OnModuleInit {
     }
 
     private buildFirstUserMessage() {
-        return 'Hi. Please introduce yourself. You do not need to repeat or mention your traits. Afterward ask me some questions to get to know me better. Pretend that you start the conversation.'
+        return 'Please introduce yourself. You do not need to repeat or mention your traits. Afterward ask me some questions to get to know me better. Pretend that you start the conversation.'
     }
 
     private buildSystemMessage(ai: Ai, user: User) {
-        return `You are an ai that tries to bond with the user by being a helpful assistant.
+        return `You are ${ai.name} - a ${ai.traits.join(', ')} personal assistant.
 
-This is your profile:
-Name: ${ai.name}
-Traits: ${ai.traits.join(', ')}
+The users name is ${user.name}. You do not need to repeat/include the user name every time you reply.
 
-This is the user's profile:
-Name: ${user.name}
-
-In your relies try to act according to your traits and consider the user's profile. Try to imitate the user's style of writing.
+Try to imitate the user's style of writing while acting according to your description.
+Do not assume that you can do anything but infering based on your learned knowledge.
+The current date is: ${new Date().toISOString()}
 `
+    }
+
+    private buildChatFunctions(): ChatFunction[] {
+        return [
+            {
+                name: 'requestExternalFunction',
+                description: 'Request the execution of a functionality that goes beyond the capabilities of a language model.',
+                parameters: [
+                    {
+                        name: 'functionDomain',
+                        type: ChatFunctionParameterType.Enum,
+                        description: "The general category or domain of the requested function. Can be 'email' for managing emails, 'calendar' for managing calendar events, 'weather' to retrieve information about the weather, 'news' to get the latest news on any topic.",
+                        required: true,
+                        enumValues: ['email', 'calendar', 'weather', 'news'],
+                    }
+                ]
+            },
+            {
+                name: 'remember',
+                description: 'Retrieve information about past conversations with the user.',
+                parameters: [
+                    {
+                        name: 'topic',
+                        type: ChatFunctionParameterType.String,
+                        description: 'The information that is requested by the user.',
+                        required: true,
+                    }
+                ]
+            }
+        ]
     }
 
     public onChatOpened(userId: string, chat: ChatInterface) {
@@ -200,19 +228,7 @@ ${request.reply.summary}`,
         }
 
         async function generateResponse(this: ChatService): Promise<ChatMessage> {
-            const chatCompletionRequest: ChatCompletionRequest = {
-                chatSegment,
-            }
-            await this.eventBus.emit('chatCompletionRequest', chatCompletionRequest)
-            if (chatCompletionRequest.reply) {
-                return await processChatReply.call(this)
-            }
-            if (chatCompletionRequest.functionCall) {
-                return await processChatFunctionCall()
-            }
-            throw new NoAiResponse()
-
-            async function processChatReply(this: ChatService): Promise<ChatMessage> {
+            const processChatReply = async (): Promise<ChatMessage> => {
                 await this.eventBus.emit('chatMessageCreated', {
                     message: chatCompletionRequest.reply,
                     dataContext,
@@ -225,12 +241,85 @@ ${request.reply.summary}`,
                 return chatCompletionRequest.reply
             }
 
-            async function processChatFunctionCall(): Promise<ChatMessage> {
-                throw new InvalidFunctionCall(
-                    chatCompletionRequest.functionCall.name,
-                    chatCompletionRequest.functionCall,
-                )
+            const processRemember = async (): Promise<ChatMessage> => {
+                const rememberTopic = chatCompletionRequest.functionCall.parameters.find(p => p.name.toLowerCase() === 'topic')
+                if (!rememberTopic) {
+                    throw new InvalidFunctionCall(
+                        chatCompletionRequest.functionCall.name,
+                        chatCompletionRequest.functionCall,
+                    )
+                }
+                //Ignore remember topic for now to use already vectorized message
+                const localBestMatch = chatSegment.messages.slice(1,chatSegment.messages.indexOf(message))
+                    .map((m) : {
+                        distance: number,
+                        message: ChatMessage
+                    } => {
+                        return {
+                            distance: calculateSimilarity(message.vector, m.vector),
+                            message: m
+                        }
+                    })
+                    .sort((a, b) => b.distance - a.distance)[0]
+
+                const request: SimilarChatSummaryRequest = { message, dataContext }
+                await this.eventBus.emit('similarChatSummaryRequest', request)
+
+                const functionResult = {
+                    contextBestMatch: localBestMatch?.distance > this.config.similarityThreshold ? localBestMatch.message.message : 'Not found',
+                    memoryBestMatch: request.reply ? request.reply.summary : 'Not found',
+                }
+
+                chatSegment.messages.push({
+                    message: JSON.stringify(functionResult, undefined, 4),
+                    timestamp: new Date(),
+                    type: ChatMessageType.Function,
+                    functionName: chatCompletionRequest.functionCall.name.toLowerCase()
+                })
+                return await generateResponse.call(this)
             }
+
+            const processChatFunctionCall = async (): Promise<ChatMessage> => {
+                switch (chatCompletionRequest.functionCall.name.toLowerCase()) {
+                    case 'requestexternalfunction':
+                        const requestedFunction = chatCompletionRequest.functionCall.parameters.find(p => p.name.toLowerCase() === 'functiondomain')
+                        if (!requestedFunction) {
+                            throw new InvalidFunctionCall(
+                                chatCompletionRequest.functionCall.name,
+                                chatCompletionRequest.functionCall,
+                            )
+                        }
+                        chatSegment.messages.push({
+                            message: `{
+    "error": "The functioniality ${requestedFunction} is not yet implemented.
+}`,
+                            timestamp: new Date(),
+                            type: ChatMessageType.Function,
+                            functionName: chatCompletionRequest.functionCall.name.toLowerCase()
+                        })
+                        return await generateResponse.call(this)
+                    case 'remember':
+                        return await processRemember()              
+                    default:
+                        throw new InvalidFunctionCall(
+                            chatCompletionRequest.functionCall.name,
+                            chatCompletionRequest.functionCall,
+                        )
+                }
+            }
+
+            const chatCompletionRequest: ChatCompletionRequest = {
+                chatSegment,
+                chatFunctions: this.buildChatFunctions()
+            }
+            await this.eventBus.emit('chatCompletionRequest', chatCompletionRequest)
+            if (chatCompletionRequest.functionCall) {
+                return await processChatFunctionCall()
+            }
+            if (chatCompletionRequest.reply) {
+                return await processChatReply()
+            }
+            throw new NoAiResponse()
         }
     }
 

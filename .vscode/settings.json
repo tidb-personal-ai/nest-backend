@@ -9,5 +9,21 @@
     "typescript.inlayHints.functionLikeReturnTypes.enabled": true,
     "typescript.inlayHints.propertyDeclarationTypes.enabled": true,
     "typescript.inlayHints.variableTypes.enabled": true,
-    "typescript.preferences.quoteStyle": "single"
+    "typescript.preferences.quoteStyle": "single",
+    "sqltools.connections": [
+        {
+            "mysqlOptions": {
+                "authProtocol": "default",
+                "enableSsl": "Enabled",
+                "ssl": {}
+            },
+            "previewLimit": 50,
+            "server": "gateway01.eu-central-1.prod.aws.tidbcloud.com",
+            "port": 4000,
+            "driver": "TiDB",
+            "name": "Illuminate",
+            "username": "4XQtDBPAwzDKDMr.root",
+            "database": "test"
+        }
+    ]
 }

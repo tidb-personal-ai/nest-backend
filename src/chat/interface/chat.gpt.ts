@@ -74,7 +74,7 @@ export class GptService implements OnModuleInit {
     async handleChatCompletionRequest(request: ChatCompletionRequest) {
         const messages = convertMessages()
         const functions = convertFunctions()
-        const forcedFunction = request.chatFunctions?.find((f) => f.force).name
+        const forcedFunction = request.chatFunctions?.find((f) => f.force)?.name
         try {
             const response = await this.openAi.createChatCompletion({
                 model: 'gpt-3.5-turbo-0613',
@@ -150,13 +150,15 @@ export class GptService implements OnModuleInit {
                         type: 'object',
                         properties: Object.fromEntries(
                             func.parameters.map((param) => {
-                                return [
-                                    param.name,
-                                    {
-                                        type: param.type.toString(),
-                                        description: param.description,
-                                    },
-                                ]
+                                const parameterObject: any = 
+                                {
+                                    type: param.type.toString(),
+                                    description: param.description,
+                                }
+                                if(param.enumValues) {
+                                    parameterObject.enum = param.enumValues
+                                }
+                                return [ param.name, parameterObject, ]
                             }),
                         ),
                         required: func.parameters.filter((param) => param.required).map((param) => param.name),
@@ -169,6 +171,7 @@ export class GptService implements OnModuleInit {
             return request.chatSegment.messages.map((message): ChatCompletionRequestMessage => {
                 let role: ChatCompletionRequestMessageRoleEnum
                 let content = message.message
+                let name: string|undefined = undefined
                 switch (message.type) {
                     case ChatMessageType.User:
                         role = ChatCompletionRequestMessageRoleEnum.User
@@ -180,10 +183,20 @@ export class GptService implements OnModuleInit {
                     case ChatMessageType.Ai:
                         role = ChatCompletionRequestMessageRoleEnum.Assistant
                         break
+                    case ChatMessageType.Function:
+                        role = ChatCompletionRequestMessageRoleEnum.Function
+                        name = message.functionName
+                        break
                     default:
                         throw new Error(`Unknown message type: ${message.type}`)
                 }
-                return {
+                return name 
+                ? {
+                    role,
+                    name,
+                    content,
+                }
+                : {
                     role,
                     content,
                 }
