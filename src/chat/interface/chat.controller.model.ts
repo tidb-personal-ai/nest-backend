@@ -15,3 +15,11 @@ export type ResponseMessage = {
 }
 
 export type MessageSender = 'user' | 'ai'
+
+export type GetKeywordCountRequest = {
+    keyword: string
+}
+
+export type GetKeywordCountResponse = {
+    count: number
+}

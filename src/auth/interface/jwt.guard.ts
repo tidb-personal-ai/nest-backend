@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Inject, Injectable, Logger, UnauthorizedException } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
-import { IS_PUBLIC_KEY } from './jwt.decorator'
+import { IS_PUBLIC_KEY } from '../auth.decorator'
 import { AuthService } from '@auth/use_case/auth.service'
 
 @Injectable()

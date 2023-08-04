@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { initializeApp } from 'firebase-admin/app'
 import { getDatabaseWithUrl } from 'firebase-admin/database'
+import { getAuth } from 'firebase-admin/auth'
 import { EventMap as UserEventMap } from '@user/domain/user.event'
 import { ConfigType } from '@nestjs/config'
 import * as Emittery from 'emittery'
@@ -18,9 +19,14 @@ export class FirebaseObserver implements OnModuleInit {
         private readonly config: ConfigType<typeof authConfig>,
     ) {}
 
-    onModuleInit() {
+    async onModuleInit() {
         try {
             initializeApp()
+            if(this.config.firebase.adminUid) {
+                await getAuth().setCustomUserClaims(this.config.firebase.adminUid, {
+                    admin: true
+                })
+            }
 
             getDatabaseWithUrl(this.config.firebase.databaseUrl)
                 .ref('users/registered')

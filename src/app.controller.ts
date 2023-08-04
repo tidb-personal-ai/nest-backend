@@ -3,7 +3,7 @@ import { AppService } from './app.service'
 import { HelloResponse } from './app.model'
 import { InjectAuthUser } from '@user/user.context'
 import { User } from '@user/domain/user.model'
-import { Public } from '@auth/interface/jwt.decorator'
+import { Public } from '@auth/auth.decorator'
 
 @Controller()
 export class AppController {

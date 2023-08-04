@@ -12,6 +12,7 @@ export class FirebaseAuthService implements AuthService {
             email: decodedToken.email,
             name: decodedToken.name,
             picture: decodedToken.picture,
+            isAdmin: decodedToken.admin,
         }
     }
 }

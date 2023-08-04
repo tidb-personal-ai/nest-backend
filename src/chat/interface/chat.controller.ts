@@ -2,9 +2,10 @@ import { Controller, Get, Query } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { ChatMessageEntity, Sender } from './chat.database.entity'
 import { Between, MoreThanOrEqual, Repository } from 'typeorm'
-import { GetMessagesRequest, GetMessagesResponse, ResponseMessage } from './chat.controller.model'
+import { GetKeywordCountRequest, GetKeywordCountResponse, GetMessagesRequest, GetMessagesResponse, ResponseMessage } from './chat.controller.model'
 import { InjectAuthUser } from '@user/user.context'
 import { User } from '@user/domain/user.model'
+import { Admin } from '@auth/auth.decorator'
 
 @Controller('chat')
 export class ChatController {
@@ -12,6 +13,17 @@ export class ChatController {
         @InjectRepository(ChatMessageEntity)
         private readonly chatMessageEntity: Repository<ChatMessageEntity>,
     ) {}
+
+    @Get('keyword-count')
+    @Admin()
+    async getKLeywordCount(
+        @Query() payload: GetKeywordCountRequest,
+    ): Promise<GetKeywordCountResponse> {
+        const count = await this.chatMessageEntity.createQueryBuilder('chat')
+            .where('chat.message LIKE :keyword', { keyword: `%${payload.keyword}%` })
+            .getCount()
+        return { count }
+    }
 
     @Get()
     async getChatMessages(
